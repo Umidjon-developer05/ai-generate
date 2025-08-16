@@ -154,10 +154,10 @@ export default function FaceGenerator() {
       });
 
       const result = await res.json();
-      console.log("[v0] API Response Status:", res.status, res.ok);
-      console.log("[v0] API Response Data:", JSON.stringify(result, null, 2));
+      console.log("  API Response Status:", res.status, res.ok);
+      console.log("  API Response Data:", JSON.stringify(result, null, 2));
       console.log(
-        "[v0] Checking conditions - success:",
+        "  Checking conditions - success:",
         result.success,
         "imageUrl:",
         result.imageUrl
@@ -175,14 +175,14 @@ export default function FaceGenerator() {
           )
         );
 
-        console.log("[v0] Face generated successfully:", result.imageUrl);
+        console.log("  Face generated successfully:", result.imageUrl);
       } else {
         console.error(
-          "[v0] Face generation failed:",
+          "  Face generation failed:",
           result.error || "Unknown error"
         );
         console.error(
-          "[v0] Failed conditions - res.ok:",
+          "  Failed conditions - res.ok:",
           res.ok,
           "result.success:",
           result.success,
@@ -192,7 +192,7 @@ export default function FaceGenerator() {
         alert(`Ошибка генерации: ${result.error || "Неизвестная ошибка"}`);
       }
     } catch (error) {
-      console.error("[v0] Face generation error:", error);
+      console.error("  Face generation error:", error);
       alert("Ошибка при генерации лица");
     } finally {
       setIsGenerating((prev) => ({ ...prev, [columnId]: false }));
@@ -204,12 +204,12 @@ export default function FaceGenerator() {
   ) => {
     const file = event.target.files?.[0];
     if (file) {
-      console.log("[v0] File selected:", file.name, file.size, file.type);
+      console.log("  File selected:", file.name, file.size, file.type);
 
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageUrl = e.target?.result as string;
-        console.log("[v0] Image loaded, URL length:", imageUrl.length);
+        console.log("  Image loaded, URL length:", imageUrl.length);
 
         setColumns((prev) =>
           prev.map((col) => ({
@@ -217,16 +217,16 @@ export default function FaceGenerator() {
             selfieImage: imageUrl,
           }))
         );
-        console.log("[v0] Columns updated with new selfie");
+        console.log("  Columns updated with new selfie");
       };
 
       reader.onerror = (e) => {
-        console.error("[v0] FileReader error:", e);
+        console.error("  FileReader error:", e);
       };
 
       reader.readAsDataURL(file);
     } else {
-      console.log("[v0] No file selected");
+      console.log("  No file selected");
     }
 
     event.target.value = "";
@@ -323,7 +323,7 @@ export default function FaceGenerator() {
 
             <Button
               onClick={() => {
-                console.log("[v0] Upload button clicked");
+                console.log("  Upload button clicked");
                 fileInputRef.current?.click();
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white"

@@ -13,16 +13,13 @@ export async function POST(req: Request) {
     const apiKey =
       "5f764be75bcf47c4a0e7fcd7298c10a3_76d871a342514cdb9711b35e6f3471d6_andoraitools";
 
-    console.log("[v0] API Key being used:", apiKey ? "Present" : "Missing");
-    console.log("[v0] Action:", action);
-
     if (!apiKey) {
       return NextResponse.json({ error: "Missing API key" }, { status: 500 });
     }
 
     if (action === "generate_face") {
       // Step 1: Get upload URL
-      console.log("[v0] Requesting upload URL with:", {
+      console.log(" Requesting upload URL with:", {
         uploadType: "imageUrl",
         size: file.size,
         contentType: file.type,
@@ -44,15 +41,15 @@ export async function POST(req: Request) {
         }
       );
 
-      console.log("[v0] Upload response status:", uploadResponse.status);
+      console.log("  Upload response status:", uploadResponse.status);
       console.log(
-        "[v0] Upload response headers:",
+        "  Upload response headers:",
         Object.fromEntries(uploadResponse.headers.entries())
       );
 
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
-        console.log("[v0] Upload error response:", errorText);
+        console.log("  Upload error response:", errorText);
 
         let error;
         try {
@@ -73,16 +70,16 @@ export async function POST(req: Request) {
 
       const uploadData = await uploadResponse.json();
       console.log(
-        "[v0] Upload data received:",
+        "  Upload data received:",
         JSON.stringify(uploadData, null, 2)
       );
 
       const { uploadImage, imageUrl } = uploadData.body;
-      console.log("[v0] Upload image URL:", uploadImage);
-      console.log("[v0] Final image URL:", imageUrl);
+      console.log("  Upload image URL:", uploadImage);
+      console.log("  Final image URL:", imageUrl);
 
       if (!uploadImage || !imageUrl) {
-        console.log("[v0] Missing required fields in upload response");
+        console.log("  Missing required fields in upload response");
         return NextResponse.json(
           {
             error: "Invalid upload response",
@@ -93,7 +90,7 @@ export async function POST(req: Request) {
       }
 
       // Step 2: Upload image to the upload URL
-      console.log("[v0] Starting image upload to:", uploadImage);
+      console.log("  Starting image upload to:", uploadImage);
       const putResponse = await fetch(uploadImage, {
         method: "PUT",
         headers: {
@@ -102,10 +99,10 @@ export async function POST(req: Request) {
         body: file,
       });
 
-      console.log("[v0] Image upload response status:", putResponse.status);
+      console.log("  Image upload response status:", putResponse.status);
       if (!putResponse.ok) {
         const errorText = await putResponse.text();
-        console.log("[v0] Image upload error:", errorText);
+        console.log("  Image upload error:", errorText);
         return NextResponse.json(
           { error: "Failed to upload image", details: errorText },
           { status: putResponse.status }
@@ -117,7 +114,7 @@ export async function POST(req: Request) {
       const textPrompt =
         (formData.get("textPrompt") as string) || "cartoon character";
 
-      console.log("[v0] Starting cartoon generation with:", {
+      console.log("  Starting cartoon generation with:", {
         imageUrl,
         template,
         textPrompt,
@@ -139,10 +136,10 @@ export async function POST(req: Request) {
         }
       );
 
-      console.log("[v0] Cartoon response status:", cartoonResponse.status);
+      console.log("  Cartoon response status:", cartoonResponse.status);
       if (!cartoonResponse.ok) {
         const errorText = await cartoonResponse.text();
-        console.log("[v0] Cartoon generation error:", errorText);
+        console.log("  Cartoon generation error:", errorText);
         let error;
         try {
           error = JSON.parse(errorText);
@@ -157,20 +154,20 @@ export async function POST(req: Request) {
 
       const cartoonData = await cartoonResponse.json();
       console.log(
-        "[v0] Cartoon data received:",
+        "  Cartoon data received:",
         JSON.stringify(cartoonData, null, 2)
       );
       const { orderId } = cartoonData.body;
 
       if (!orderId) {
-        console.log("[v0] No orderId in cartoon response");
+        console.log("  No orderId in cartoon response");
         return NextResponse.json(
           { error: "No order ID received" },
           { status: 500 }
         );
       }
 
-      console.log("[v0] Starting polling for order:", orderId);
+      console.log("  Starting polling for order:", orderId);
 
       // Step 4: Poll for result
       let retries = 0;
@@ -222,7 +219,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error: any) {
-    console.error("[v0] LightX API error:", error);
+    console.error("  LightX API error:", error);
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
       { status: 500 }
