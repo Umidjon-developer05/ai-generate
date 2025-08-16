@@ -154,10 +154,10 @@ export default function FaceGenerator() {
       });
 
       const result = await res.json();
-      console.log("  API Response Status:", res.status, res.ok);
-      console.log("  API Response Data:", JSON.stringify(result, null, 2));
+      console.log("[v0] API Response Status:", res.status, res.ok);
+      console.log("[v0] API Response Data:", JSON.stringify(result, null, 2));
       console.log(
-        "  Checking conditions - success:",
+        "[v0] Checking conditions - success:",
         result.success,
         "imageUrl:",
         result.imageUrl
@@ -175,14 +175,14 @@ export default function FaceGenerator() {
           )
         );
 
-        console.log("  Face generated successfully:", result.imageUrl);
+        console.log("[v0] Face generated successfully:", result.imageUrl);
       } else {
         console.error(
-          "  Face generation failed:",
+          "[v0] Face generation failed:",
           result.error || "Unknown error"
         );
         console.error(
-          "  Failed conditions - res.ok:",
+          "[v0] Failed conditions - res.ok:",
           res.ok,
           "result.success:",
           result.success,
@@ -192,7 +192,7 @@ export default function FaceGenerator() {
         alert(`Ошибка генерации: ${result.error || "Неизвестная ошибка"}`);
       }
     } catch (error) {
-      console.error("  Face generation error:", error);
+      console.error("[v0] Face generation error:", error);
       alert("Ошибка при генерации лица");
     } finally {
       setIsGenerating((prev) => ({ ...prev, [columnId]: false }));
@@ -204,12 +204,12 @@ export default function FaceGenerator() {
   ) => {
     const file = event.target.files?.[0];
     if (file) {
-      console.log("  File selected:", file.name, file.size, file.type);
+      console.log("[v0] File selected:", file.name, file.size, file.type);
 
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageUrl = e.target?.result as string;
-        console.log("  Image loaded, URL length:", imageUrl.length);
+        console.log("[v0] Image loaded, URL length:", imageUrl.length);
 
         setColumns((prev) =>
           prev.map((col) => ({
@@ -217,16 +217,16 @@ export default function FaceGenerator() {
             selfieImage: imageUrl,
           }))
         );
-        console.log("  Columns updated with new selfie");
+        console.log("[v0] Columns updated with new selfie");
       };
 
       reader.onerror = (e) => {
-        console.error("  FileReader error:", e);
+        console.error("[v0] FileReader error:", e);
       };
 
       reader.readAsDataURL(file);
     } else {
-      console.log("  No file selected");
+      console.log("[v0] No file selected");
     }
 
     event.target.value = "";
@@ -323,7 +323,7 @@ export default function FaceGenerator() {
 
             <Button
               onClick={() => {
-                console.log("  Upload button clicked");
+                console.log("[v0] Upload button clicked");
                 fileInputRef.current?.click();
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -368,7 +368,7 @@ export default function FaceGenerator() {
                 }}
               >
                 {/* Column header */}
-                <div className="absolute top-2 left-2 right-2 z-20">
+                <div className="absolute bottom-2 left-2 right-2 z-20">
                   <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1 text-center">
                     <h3 className="text-sm font-semibold text-gray-800">
                       {column.selectedTemplate}
@@ -448,6 +448,11 @@ export default function FaceGenerator() {
                       />
                     )}
 
+                    {/* Fixed red comparison line through center of image */}
+                    <div className="absolute top-0 h-full w-1 bg-red-600 shadow-2xl z-20 left-1/2 transform -translate-x-1/2">
+                      <div className="absolute inset-0 bg-gradient-to-b from-red-500 via-red-600 to-red-500 shadow-lg"></div>
+                    </div>
+
                     {/* Loading overlay */}
                     {isGenerating[column.id] && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-30">
@@ -500,7 +505,7 @@ export default function FaceGenerator() {
                           <span className="font-bold text-gray-800 text-sm">
                             API:
                           </span>
-                          <span className="text-blue-800 font-black text-sm px-4 py-2 bg-gradient-to-r from-blue-200 to-blue-300 rounded-full shadow-md">
+                          <span className="text-blue-800 font-black text-sm px-4 py-2 bg-gradient-to-r from-blue-200 to-blue-300 rounded-full shadow-md border border-blue-200/50">
                             {column.apiConfig.name}
                           </span>
                         </div>
