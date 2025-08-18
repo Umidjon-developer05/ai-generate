@@ -4,6 +4,7 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
+    const styleImageFile = formData.get("styleImage") as File | null;
     const action = formData.get("action") as string;
     const apiType = (formData.get("apiType") as string) || "cartoon";
 
@@ -11,7 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const apiKey = process.env.NEXT_LIGHTX_API_KEY || "";
+    const apiKey =
+      "09c7163908b945799248c0820c5311bc_c5f61635e3fb430883fa2763f012203e_andoraitools";
 
     console.log("[v0] API Key being used:", apiKey ? "Present" : "Missing");
     console.log("[v0] Action:", action);
@@ -122,11 +124,55 @@ export async function POST(req: Request) {
         imageUrl,
         template,
         textPrompt,
+        hasStyleImage: !!styleImageFile,
       });
 
       let apiEndpoint: string;
       let requestBody: any;
       let statusEndpoint: string;
+      let styleImageUrl: string | undefined;
+
+      if (styleImageFile) {
+        console.log("[v0] Uploading style image...");
+
+        const styleUploadResponse = await fetch(
+          "https://api.lightxeditor.com/external/api/v2/uploadImageUrl",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+            },
+            body: JSON.stringify({
+              uploadType: "imageUrl",
+              size: styleImageFile.size,
+              contentType: styleImageFile.type,
+            }),
+          }
+        );
+
+        if (styleUploadResponse.ok) {
+          const styleUploadData = await styleUploadResponse.json();
+          const { uploadImage: styleUploadUrl, imageUrl: finalStyleUrl } =
+            styleUploadData.body;
+
+          const stylePutResponse = await fetch(styleUploadUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": styleImageFile.type,
+            },
+            body: styleImageFile,
+          });
+
+          if (stylePutResponse.ok) {
+            styleImageUrl = finalStyleUrl;
+            console.log(
+              "[v0] Style image uploaded successfully:",
+              styleImageUrl
+            );
+          }
+        }
+      }
 
       switch (apiType) {
         case "hairstyle":
@@ -166,9 +212,8 @@ export async function POST(req: Request) {
             "https://api.lightxeditor.com/external/api/v2/aivirtualtryon";
           requestBody = {
             imageUrl: imageUrl,
-            styleImageUrl:
-              template ||
-              "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop",
+            textPrompt:
+              textPrompt || "stylish modern outfit, fashionable clothing",
           };
           statusEndpoint =
             "https://api.lightxeditor.com/external/api/v2/order-status";
@@ -180,7 +225,7 @@ export async function POST(req: Request) {
           requestBody = {
             imageUrl: imageUrl,
             styleImageUrl:
-              template ||
+              styleImageUrl ||
               "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face",
           };
           statusEndpoint =
@@ -192,7 +237,7 @@ export async function POST(req: Request) {
           requestBody = {
             imageUrl: imageUrl,
             textPrompt: textPrompt || "professional portrait style",
-            styleImageUrl: template || undefined,
+            styleImageUrl: styleImageUrl || undefined,
           };
           statusEndpoint =
             "https://api.lightxeditor.com/external/api/v1/order-status";
@@ -202,7 +247,7 @@ export async function POST(req: Request) {
           apiEndpoint = "https://api.lightxeditor.com/external/api/v1/replace";
           requestBody = {
             imageUrl: imageUrl,
-            maskedImageUrl: template || imageUrl, // For replace API, template should be the masked image
+            maskedImageUrl: styleImageUrl || imageUrl,
             textPrompt: textPrompt || "replace with modern style",
           };
           statusEndpoint =
@@ -290,28 +335,38 @@ export async function POST(req: Request) {
         "[v0] Generation data received:",
         JSON.stringify(generationData, null, 2)
       );
-      const { orderId } = generationData.body;
 
-      if (!orderId) {
-        console.log("[v0] No orderId in generation response");
+      if (generationData.status === "FAIL" || !generationData.body) {
+        console.log(
+          "[v0] Generation failed:",
+          generationData.message || "Unknown error"
+        );
         return NextResponse.json(
-          { error: "No order ID received" },
-          { status: 500 }
+          {
+            error: generationData.message || "Generation failed",
+            details:
+              generationData.description || "API returned failure status",
+            statusCode: generationData.statusCode,
+          },
+          { status: 400 }
         );
       }
+
+      const { orderId } = generationData.body;
 
       console.log("[v0] Starting polling for order:", orderId);
 
       // Step 4: Poll for result using the appropriate status endpoint
       let retries = 0;
-      const maxRetries = 5;
+      const maxRetries = 10; // Increased from 5 to 10
+      const pollInterval = 5000; // Increased from 3000ms to 5000ms (5 seconds)
 
       while (retries < maxRetries) {
         console.log(
           `[v0] Polling attempt ${retries + 1}/${maxRetries} for order:`,
           orderId
         );
-        await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
 
         try {
           const statusResponse = await fetch(statusEndpoint, {
@@ -336,6 +391,21 @@ export async function POST(req: Request) {
               `[v0] Status data ${retries + 1}:`,
               JSON.stringify(statusData, null, 2)
             );
+
+            if (statusData.status === "FAIL") {
+              console.log(
+                "[v0] Generation failed with API error:",
+                statusData.message
+              );
+              return NextResponse.json(
+                {
+                  error: statusData.message || "Generation failed",
+                  details: statusData.description || "API processing failed",
+                  statusCode: statusData.statusCode,
+                },
+                { status: 400 }
+              );
+            }
 
             const { status, output } = statusData.body || {};
             console.log(

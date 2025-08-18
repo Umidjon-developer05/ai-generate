@@ -14,6 +14,15 @@ interface APIOption {
   cost: number;
   previewImage: string;
   requiresStyleImage?: boolean;
+  requiresTextPrompt?: boolean;
+  supportedSettings: ("strength" | "steps" | "guidance")[];
+  defaultSettings: Partial<Settings>;
+  settingsRanges: {
+    strength?: { min: number; max: number; step: number };
+    steps?: { min: number; max: number; step: number };
+    guidance?: { min: number; max: number; step: number };
+  };
+  promptPlaceholder?: string;
 }
 
 interface Settings {
@@ -27,6 +36,7 @@ export default function FaceGenerator() {
   const [selfieImage, setSelfieImage] = useState<string | null>(
     "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face"
   );
+  const [styleImage, setStyleImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [settings, setSettings] = useState<Settings>({
@@ -34,8 +44,10 @@ export default function FaceGenerator() {
     steps: 25,
     guidance: 7.5,
   });
+  const [textPrompt, setTextPrompt] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const styleImageInputRef = useRef<HTMLInputElement>(null);
 
   const apiOptions: APIOption[] = [
     {
@@ -44,8 +56,15 @@ export default function FaceGenerator() {
       description: "Try new hairstyles instantly - from bob cuts to afros",
       endpoint: "/external/api/v1/hairstyle",
       cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face", // turli soch stili
+      previewImage: "/placeholder.svg?height=200&width=200",
+      requiresTextPrompt: true,
+      supportedSettings: ["strength", "steps"],
+      defaultSettings: { strength: 0.8, steps: 20, guidance: 7.5 },
+      settingsRanges: {
+        strength: { min: 0.3, max: 1.0, step: 0.05 },
+        steps: { min: 10, max: 30, step: 1 },
+      },
+      promptPlaceholder: "e.g., curly bob, long wavy hair, pixie cut",
     },
     {
       id: "haircolor",
@@ -53,8 +72,15 @@ export default function FaceGenerator() {
       description: "Transform your hair color - blonde to pink unicorn ✨",
       endpoint: "/external/api/v2/haircolor/",
       cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&h=400&fit=crop&crop=face", // rangli sochli qiz
+      previewImage: "/placeholder.svg?height=200&width=200",
+      requiresTextPrompt: true,
+      supportedSettings: ["strength", "steps"],
+      defaultSettings: { strength: 0.75, steps: 25, guidance: 7.5 },
+      settingsRanges: {
+        strength: { min: 0.4, max: 1.0, step: 0.05 },
+        steps: { min: 15, max: 35, step: 1 },
+      },
+      promptPlaceholder: "e.g., platinum blonde, rainbow colors, natural brown",
     },
     {
       id: "outfit",
@@ -62,7 +88,17 @@ export default function FaceGenerator() {
       description: "Create complete new looks with AI styling",
       endpoint: "/external/api/v1/outfit",
       cost: 1,
-      previewImage: "/image.png", // kiyim/styling preview
+      previewImage: "/placeholder.svg?height=200&width=200",
+      requiresTextPrompt: true,
+      supportedSettings: ["strength", "steps", "guidance"],
+      defaultSettings: { strength: 0.85, steps: 30, guidance: 8.0 },
+      settingsRanges: {
+        strength: { min: 0.5, max: 1.0, step: 0.05 },
+        steps: { min: 20, max: 50, step: 1 },
+        guidance: { min: 5, max: 15, step: 0.5 },
+      },
+      promptPlaceholder:
+        "e.g., business suit, casual streetwear, elegant dress",
     },
     {
       id: "virtualtryon",
@@ -70,9 +106,15 @@ export default function FaceGenerator() {
       description: "Try on virtual clothes - test jackets and shirts",
       endpoint: "/external/api/v2/aivirtualtryon",
       cost: 2,
-      previewImage:
-        "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?w=400&h=400&fit=crop&crop=face", // virtual kiyim sinash
-      requiresStyleImage: true,
+      previewImage: "/placeholder.svg?height=200&width=200",
+      requiresTextPrompt: true,
+      supportedSettings: ["strength"],
+      defaultSettings: { strength: 0.9, steps: 25, guidance: 7.5 },
+      settingsRanges: {
+        strength: { min: 0.6, max: 1.0, step: 0.05 },
+      },
+      promptPlaceholder:
+        "e.g., stylish modern outfit, fashionable clothing, casual wear",
     },
     {
       id: "faceswap",
@@ -80,9 +122,13 @@ export default function FaceGenerator() {
       description: "Swap faces like in memes, but professionally",
       endpoint: "/external/api/v1/face-swap",
       cost: 0.5,
-      previewImage:
-        "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=400&h=400&fit=crop&crop=face", // yaqin portret
+      previewImage: "/placeholder.svg?height=200&width=200",
       requiresStyleImage: true,
+      supportedSettings: ["strength"],
+      defaultSettings: { strength: 0.95, steps: 25, guidance: 7.5 },
+      settingsRanges: {
+        strength: { min: 0.7, max: 1.0, step: 0.05 },
+      },
     },
     {
       id: "portrait",
@@ -90,8 +136,17 @@ export default function FaceGenerator() {
       description: "Create beautiful studio-style portraits",
       endpoint: "/external/api/v1/portrait",
       cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face", // studiya portreti
+      previewImage: "/placeholder.svg?height=200&width=200",
+      requiresTextPrompt: true,
+      supportedSettings: ["strength", "steps", "guidance"],
+      defaultSettings: { strength: 0.7, steps: 35, guidance: 9.0 },
+      settingsRanges: {
+        strength: { min: 0.3, max: 0.9, step: 0.05 },
+        steps: { min: 25, max: 50, step: 1 },
+        guidance: { min: 6, max: 12, step: 0.5 },
+      },
+      promptPlaceholder:
+        "e.g., professional headshot, artistic portrait, studio lighting",
     },
     {
       id: "replace",
@@ -99,9 +154,17 @@ export default function FaceGenerator() {
       description: "Replace backgrounds, accessories, and elements",
       endpoint: "/external/api/v1/replace",
       cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face", // fonni almashtirish
+      previewImage: "/placeholder.svg?height=200&width=200",
       requiresStyleImage: true,
+      requiresTextPrompt: true,
+      supportedSettings: ["strength", "guidance"],
+      defaultSettings: { strength: 0.8, steps: 25, guidance: 10.0 },
+      settingsRanges: {
+        strength: { min: 0.5, max: 1.0, step: 0.05 },
+        guidance: { min: 7, max: 15, step: 0.5 },
+      },
+      promptPlaceholder:
+        "e.g., tropical beach background, modern office, mountain landscape",
     },
     {
       id: "cartoon",
@@ -109,7 +172,16 @@ export default function FaceGenerator() {
       description: "Transform photos into cartoon characters",
       endpoint: "/external/api/v1/cartoon",
       cost: 1,
-      previewImage: "/cartoon.png", // cartoon-style
+      previewImage: "/placeholder.svg?height=200&width=200",
+      requiresTextPrompt: true,
+      supportedSettings: ["strength", "steps", "guidance"],
+      defaultSettings: { strength: 0.85, steps: 25, guidance: 8.5 },
+      settingsRanges: {
+        strength: { min: 0.6, max: 1.0, step: 0.05 },
+        steps: { min: 15, max: 40, step: 1 },
+        guidance: { min: 6, max: 12, step: 0.5 },
+      },
+      promptPlaceholder: "e.g., Disney style, anime character, 3D cartoon",
     },
     {
       id: "caricature",
@@ -117,8 +189,16 @@ export default function FaceGenerator() {
       description: "Create humorous caricatures with big eyes and features",
       endpoint: "/external/api/v1/caricature",
       cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=400&h=400&fit=crop&crop=face", // kulgili yuz ifodasi
+      previewImage: "/placeholder.svg?height=200&width=200",
+      requiresTextPrompt: true,
+      supportedSettings: ["strength", "steps"],
+      defaultSettings: { strength: 0.9, steps: 20, guidance: 7.5 },
+      settingsRanges: {
+        strength: { min: 0.7, max: 1.0, step: 0.05 },
+        steps: { min: 15, max: 30, step: 1 },
+      },
+      promptPlaceholder:
+        "e.g., exaggerated features, funny cartoon style, big head small body",
     },
     {
       id: "avatar",
@@ -126,7 +206,17 @@ export default function FaceGenerator() {
       description: "Create avatars in gaming, anime, or business styles",
       endpoint: "/external/api/v1/avatar",
       cost: 1,
-      previewImage: "/avatar.png", // avatar feel
+      previewImage: "/placeholder.svg?height=200&width=200",
+      requiresTextPrompt: true,
+      supportedSettings: ["strength", "steps", "guidance"],
+      defaultSettings: { strength: 0.8, steps: 30, guidance: 8.0 },
+      settingsRanges: {
+        strength: { min: 0.5, max: 1.0, step: 0.05 },
+        steps: { min: 20, max: 40, step: 1 },
+        guidance: { min: 6, max: 12, step: 0.5 },
+      },
+      promptPlaceholder:
+        "e.g., gaming avatar, professional headshot, anime style",
     },
   ];
 
@@ -152,7 +242,34 @@ export default function FaceGenerator() {
     event.target.value = "";
   };
 
-  const generateFaceWithLightX = async (file: File) => {
+  const handleStyleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        setStyleImage(imageUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+    event.target.value = "";
+  };
+
+  const handleAPIChange = (apiId: string) => {
+    const apiConfig = apiOptions.find((api) => api.id === apiId);
+    if (apiConfig) {
+      setSelectedAPI(apiId);
+      setSettings((prev) => ({
+        ...prev,
+        ...apiConfig.defaultSettings,
+      }));
+      setStyleImage(null);
+    }
+  };
+
+  const generateFaceWithLightX = async (file: File, styleFile?: File) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("action", "generate_face");
@@ -160,6 +277,12 @@ export default function FaceGenerator() {
     formData.append("template", selectedAPIConfig.name);
     formData.append("style", "realistic");
     formData.append("strength", settings.strength.toString());
+    if (selectedAPIConfig.requiresTextPrompt && textPrompt) {
+      formData.append("textPrompt", textPrompt);
+    }
+    if (styleFile && selectedAPIConfig.requiresStyleImage) {
+      formData.append("styleImage", styleFile);
+    }
 
     setIsGenerating(true);
 
@@ -190,11 +313,24 @@ export default function FaceGenerator() {
       return;
     }
 
+    if (selectedAPIConfig.requiresStyleImage && !styleImage) {
+      alert(`Please upload a style image for ${selectedAPIConfig.name}`);
+      return;
+    }
+
     if (selfieImage.startsWith("data:")) {
       const response = await fetch(selfieImage);
       const blob = await response.blob();
       const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
-      await generateFaceWithLightX(file);
+
+      let styleFile: File | undefined;
+      if (styleImage && styleImage.startsWith("data:")) {
+        const styleResponse = await fetch(styleImage);
+        const styleBlob = await styleResponse.blob();
+        styleFile = new File([styleBlob], "style.jpg", { type: "image/jpeg" });
+      }
+
+      await generateFaceWithLightX(file, styleFile);
     } else {
       alert("Please upload a new selfie for generation");
     }
@@ -209,20 +345,38 @@ export default function FaceGenerator() {
               AI Face Generator Studio
             </h1>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleSelfieUpload}
-              className="hidden"
-            />
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleSelfieUpload}
+                className="hidden"
+              />
+              <input
+                ref={styleImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleStyleImageUpload}
+                className="hidden"
+              />
 
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base w-full sm:w-auto"
-            >
-              📷 Upload Selfie
-            </Button>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
+              >
+                📷 Upload Selfie
+              </Button>
+
+              {selectedAPIConfig.requiresStyleImage && (
+                <Button
+                  onClick={() => styleImageInputRef.current?.click()}
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
+                >
+                  🎨 Upload Style Image
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -238,14 +392,12 @@ export default function FaceGenerator() {
             <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner">
               {selfieImage ? (
                 <div className="relative w-full h-full">
-                  {/* Original/Generated image */}
                   <img
                     src={generatedImage || selfieImage}
                     alt="Preview"
                     className="w-full h-full object-cover"
                   />
 
-                  {/* Red comparison line */}
                   <div className="absolute top-0 h-full w-1 bg-red-500 shadow-lg z-10 left-1/2 transform -translate-x-1/2">
                     <div className="absolute inset-0 bg-gradient-to-b from-red-400 via-red-500 to-red-400"></div>
                   </div>
@@ -254,7 +406,6 @@ export default function FaceGenerator() {
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
                       <div className="bg-white rounded-3xl p-4 sm:p-6 lg:p-8 text-center shadow-2xl mx-4">
                         <div className="relative mb-4 sm:mb-6">
-                          {/* Multiple spinning rings */}
                           <div className="animate-spin w-12 sm:w-16 h-12 sm:h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto"></div>
                           <div
                             className="animate-spin w-8 sm:w-12 h-8 sm:h-12 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto absolute top-2 left-1/2 transform -translate-x-1/2"
@@ -277,7 +428,6 @@ export default function FaceGenerator() {
                           ...
                         </div>
 
-                        {/* Bouncing dots */}
                         <div className="flex justify-center gap-1">
                           <div
                             className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
@@ -326,7 +476,7 @@ export default function FaceGenerator() {
                 {apiOptions.map((api) => (
                   <div
                     key={api.id}
-                    onClick={() => setSelectedAPI(api.id)}
+                    onClick={() => handleAPIChange(api.id)}
                     className={`cursor-pointer p-3 sm:p-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
                       selectedAPI === api.id
                         ? "border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-lg"
@@ -363,71 +513,138 @@ export default function FaceGenerator() {
               </div>
             </div>
 
+            {selectedAPIConfig.requiresTextPrompt && (
+              <div className="mb-6 sm:mb-8">
+                <label className="block text-sm font-bold text-gray-800 mb-3">
+                  Text Prompt:
+                </label>
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-yellow-50 to-orange-100 rounded-2xl">
+                  <input
+                    type="text"
+                    value={textPrompt}
+                    onChange={(e) => setTextPrompt(e.target.value)}
+                    placeholder={
+                      selectedAPIConfig.promptPlaceholder ||
+                      "Describe what you want..."
+                    }
+                    className="w-full px-3 py-2 border border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedAPIConfig.requiresStyleImage && (
+              <div className="mb-6 sm:mb-8">
+                <label className="block text-sm font-bold text-gray-800 mb-3">
+                  Style Image Preview:
+                </label>
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-orange-50 to-red-100 rounded-2xl">
+                  {styleImage ? (
+                    <div className="relative">
+                      <img
+                        src={styleImage || "/placeholder.svg"}
+                        alt="Style preview"
+                        className="w-full h-32 object-cover rounded-xl"
+                      />
+                      <button
+                        onClick={() => setStyleImage(null)}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-32 border-2 border-dashed border-orange-300 rounded-xl">
+                      <div className="text-center text-orange-600">
+                        <div className="text-2xl mb-2">🎨</div>
+                        <div className="text-sm font-semibold">
+                          Upload style image
+                        </div>
+                        <div className="text-xs">
+                          Required for {selectedAPIConfig.name}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
               <h3 className="font-bold text-gray-800 flex items-center gap-2">
                 <span className="w-3 h-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></span>
                 Settings
               </h3>
 
-              <div className="p-3 sm:p-4 bg-gradient-to-br from-indigo-50 to-blue-100 rounded-2xl">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="text-xs sm:text-sm font-bold text-gray-800">
-                    Strength
-                  </label>
-                  <span className="text-sm sm:text-lg font-bold text-indigo-700 bg-white px-2 sm:px-3 py-1 rounded-full">
-                    {settings.strength}
-                  </span>
+              {selectedAPIConfig.supportedSettings.includes("strength") && (
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-indigo-50 to-blue-100 rounded-2xl">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-xs sm:text-sm font-bold text-gray-800">
+                      Strength
+                    </label>
+                    <span className="text-sm sm:text-lg font-bold text-indigo-700 bg-white px-2 sm:px-3 py-1 rounded-full">
+                      {settings.strength}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[settings.strength]}
+                    onValueChange={([value]) =>
+                      setSettings((prev) => ({ ...prev, strength: value }))
+                    }
+                    max={selectedAPIConfig.settingsRanges.strength?.max || 1}
+                    min={selectedAPIConfig.settingsRanges.strength?.min || 0}
+                    step={
+                      selectedAPIConfig.settingsRanges.strength?.step || 0.05
+                    }
+                  />
                 </div>
-                <Slider
-                  value={[settings.strength]}
-                  onValueChange={([value]) =>
-                    setSettings((prev) => ({ ...prev, strength: value }))
-                  }
-                  max={1}
-                  min={0}
-                  step={0.05}
-                />
-              </div>
+              )}
 
-              <div className="p-3 sm:p-4 bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="text-xs sm:text-sm font-bold text-gray-800">
-                    Steps
-                  </label>
-                  <span className="text-sm sm:text-lg font-bold text-purple-700 bg-white px-2 sm:px-3 py-1 rounded-full">
-                    {settings.steps}
-                  </span>
+              {selectedAPIConfig.supportedSettings.includes("steps") && (
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-xs sm:text-sm font-bold text-gray-800">
+                      Steps
+                    </label>
+                    <span className="text-sm sm:text-lg font-bold text-purple-700 bg-white px-2 sm:px-3 py-1 rounded-full">
+                      {settings.steps}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[settings.steps]}
+                    onValueChange={([value]) =>
+                      setSettings((prev) => ({ ...prev, steps: value }))
+                    }
+                    max={selectedAPIConfig.settingsRanges.steps?.max || 50}
+                    min={selectedAPIConfig.settingsRanges.steps?.min || 1}
+                    step={selectedAPIConfig.settingsRanges.steps?.step || 1}
+                  />
                 </div>
-                <Slider
-                  value={[settings.steps]}
-                  onValueChange={([value]) =>
-                    setSettings((prev) => ({ ...prev, steps: value }))
-                  }
-                  max={50}
-                  min={1}
-                  step={1}
-                />
-              </div>
+              )}
 
-              <div className="p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="text-xs sm:text-sm font-bold text-gray-800">
-                    Guidance
-                  </label>
-                  <span className="text-sm sm:text-lg font-bold text-green-700 bg-white px-2 sm:px-3 py-1 rounded-full">
-                    {settings.guidance}
-                  </span>
+              {selectedAPIConfig.supportedSettings.includes("guidance") && (
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-xs sm:text-sm font-bold text-gray-800">
+                      Guidance
+                    </label>
+                    <span className="text-sm sm:text-lg font-bold text-green-700 bg-white px-2 sm:px-3 py-1 rounded-full">
+                      {settings.guidance}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[settings.guidance]}
+                    onValueChange={([value]) =>
+                      setSettings((prev) => ({ ...prev, guidance: value }))
+                    }
+                    max={selectedAPIConfig.settingsRanges.guidance?.max || 20}
+                    min={selectedAPIConfig.settingsRanges.guidance?.min || 1}
+                    step={
+                      selectedAPIConfig.settingsRanges.guidance?.step || 0.5
+                    }
+                  />
                 </div>
-                <Slider
-                  value={[settings.guidance]}
-                  onValueChange={([value]) =>
-                    setSettings((prev) => ({ ...prev, guidance: value }))
-                  }
-                  max={20}
-                  min={1}
-                  step={0.5}
-                />
-              </div>
+              )}
             </div>
 
             <Button
