@@ -12,8 +12,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const apiKey =
-      "09c7163908b945799248c0820c5311bc_c5f61635e3fb430883fa2763f012203e_andoraitools";
+    const apiKey = process.env.NEXT_LIGHTX_API_KEY;
 
     console.log("[v0] API Key being used:", apiKey ? "Present" : "Missing");
     console.log("[v0] Action:", action);
@@ -236,8 +235,8 @@ export async function POST(req: Request) {
           apiEndpoint = "https://api.lightxeditor.com/external/api/v1/portrait";
           requestBody = {
             imageUrl: imageUrl,
+            styleImageUrl: styleImageUrl || "", // Always include, use empty string if not provided
             textPrompt: textPrompt || "professional portrait style",
-            styleImageUrl: styleImageUrl || undefined,
           };
           statusEndpoint =
             "https://api.lightxeditor.com/external/api/v1/order-status";
@@ -301,6 +300,12 @@ export async function POST(req: Request) {
             "https://api.lightxeditor.com/external/api/v1/order-status";
           break;
       }
+
+      console.log(
+        "[v0] Final request body being sent:",
+        JSON.stringify(requestBody, null, 2)
+      );
+      console.log("[v0] API endpoint:", apiEndpoint);
 
       const generationResponse = await fetch(apiEndpoint, {
         method: "POST",

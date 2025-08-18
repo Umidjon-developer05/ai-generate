@@ -52,6 +52,9 @@ export default function FaceGenerator() {
 
   const [dividerPosition, setDividerPosition] = useState(50); // Position as percentage from left
   const [isDragging, setIsDragging] = useState(false);
+  const [isStyleImageDragOver, setIsStyleImageDragOver] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("blackwhite");
+  const [showFullTemplate, setShowFullTemplate] = useState(false);
 
   const apiOptions: APIOption[] = [
     {
@@ -234,6 +237,31 @@ export default function FaceGenerator() {
   const selectedAPIConfig =
     apiOptions.find((api) => api.id === selectedAPI) || apiOptions[0];
 
+  const templateOptions = [
+    { id: "blackwhite", name: "Black & White", filter: "grayscale(100%)" },
+    { id: "blur", name: "Blur Effect", filter: "blur(3px)" },
+    { id: "sepia", name: "Vintage Sepia", filter: "sepia(100%) contrast(1.2)" },
+    {
+      id: "contrast",
+      name: "High Contrast",
+      filter: "contrast(150%) brightness(1.1)",
+    },
+    {
+      id: "vintage",
+      name: "Vintage Film",
+      filter: "sepia(50%) contrast(1.3) brightness(0.9) hue-rotate(15deg)",
+    },
+    {
+      id: "cold",
+      name: "Cold Tone",
+      filter: "hue-rotate(180deg) saturate(1.2)",
+    },
+  ];
+
+  const selectedTemplateConfig =
+    templateOptions.find((t) => t.id === selectedTemplate) ||
+    templateOptions[0];
+
   const convertToRubles = (dollars: number) => {
     return (dollars * 95).toFixed(0);
   };
@@ -280,7 +308,72 @@ export default function FaceGenerator() {
     }
   };
 
+  const validateAndSanitizePrompt = (
+    prompt: string
+  ): { isValid: boolean; sanitized: string; error?: string } => {
+    if (!prompt.trim()) {
+      return {
+        isValid: false,
+        sanitized: "",
+        error: "Text prompt cannot be empty",
+      };
+    }
+
+    // Remove or replace problematic characters
+    const sanitized = prompt
+      .trim()
+      // Remove quotes that can break JSON
+      .replace(/["""'']/g, "")
+      // Replace Cyrillic and other non-Latin characters with transliteration or remove them
+      .replace(/[а-яё]/gi, "") // Remove Cyrillic characters
+      .replace(/[^\w\s\-.,!?]/g, "") // Keep only alphanumeric, spaces, and basic punctuation
+      // Clean up multiple spaces
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Check length limits
+    if (sanitized.length < 3) {
+      return {
+        isValid: false,
+        sanitized,
+        error: "Text prompt must be at least 3 characters long",
+      };
+    }
+
+    if (sanitized.length > 200) {
+      return {
+        isValid: false,
+        sanitized,
+        error: "Text prompt must be less than 200 characters",
+      };
+    }
+
+    // Check for empty result after sanitization
+    if (!sanitized) {
+      return {
+        isValid: false,
+        sanitized: "",
+        error:
+          "Text prompt contains only unsupported characters. Please use English letters and basic punctuation.",
+      };
+    }
+
+    return { isValid: true, sanitized };
+  };
+
   const generateFaceWithLightX = async (file: File, styleFile?: File) => {
+    let validatedPrompt = "";
+    if (selectedAPIConfig.requiresTextPrompt && textPrompt) {
+      const validation = validateAndSanitizePrompt(textPrompt);
+      if (!validation.isValid) {
+        alert(`Text Prompt Error: ${validation.error}`);
+        return;
+      }
+      validatedPrompt = validation.sanitized;
+      console.log("[v0] Original prompt:", textPrompt);
+      console.log("[v0] Sanitized prompt:", validatedPrompt);
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("action", "generate_face");
@@ -288,8 +381,8 @@ export default function FaceGenerator() {
     formData.append("template", selectedAPIConfig.name);
     formData.append("style", "realistic");
     formData.append("strength", settings.strength.toString());
-    if (selectedAPIConfig.requiresTextPrompt && textPrompt) {
-      formData.append("textPrompt", textPrompt);
+    if (selectedAPIConfig.requiresTextPrompt && validatedPrompt) {
+      formData.append("textPrompt", validatedPrompt);
     }
     if (styleFile && selectedAPIConfig.requiresStyleImage) {
       formData.append("styleImage", styleFile);
@@ -371,6 +464,45 @@ export default function FaceGenerator() {
     }
   };
 
+  const handleStyleImageDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsStyleImageDragOver(true);
+  };
+
+  const handleStyleImageDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsStyleImageDragOver(true);
+  };
+
+  const handleStyleImageDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsStyleImageDragOver(false);
+  };
+
+  const handleStyleImageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsStyleImageDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      const file = files[0];
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          setStyleImage(imageUrl);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const handlePreviewClick = () => {
+    if (selfieImage) {
+      setShowFullTemplate(!showFullTemplate);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       <div className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-white/20">
@@ -424,6 +556,27 @@ export default function FaceGenerator() {
               Preview
             </h2>
 
+            <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-pink-100 rounded-2xl">
+              <label className="block text-sm font-bold text-gray-800 mb-3">
+                Template Effect:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {templateOptions.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => setSelectedTemplate(template.id)}
+                    className={`px-3 py-2 text-xs font-bold rounded-xl transition-all duration-300 ${
+                      selectedTemplate === template.id
+                        ? "bg-purple-500 text-white shadow-lg"
+                        : "bg-white text-purple-600 hover:bg-purple-100"
+                    }`}
+                  >
+                    {template.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-2xl">
               <div className="flex justify-between items-center mb-2">
                 <label className="text-sm font-bold text-gray-800">
@@ -458,54 +611,58 @@ export default function FaceGenerator() {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
+              onClick={handlePreviewClick}
             >
               {selfieImage ? (
                 <div className="relative w-full h-full">
-                  <img
-                    src={selfieImage || "/placeholder.svg"}
-                    alt="Original"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{
-                      clipPath: `polygon(0 0, ${dividerPosition}% 0, ${dividerPosition}% 100%, 0 100%)`,
-                    }}
-                  />
-
-                  <img
-                    src={generatedImage || selfieImage}
-                    alt="Enhanced"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{
-                      clipPath: `polygon(${dividerPosition}% 0, 100% 0, 100% 100%, ${dividerPosition}% 100%)`,
-                    }}
-                  />
-
-                  <div className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
-                    Original
-                  </div>
-                  <div className="absolute top-4 right-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
-                    {generatedImage ? "AI Enhanced" : "Original"}
-                  </div>
-
-                  <div
-                    className="absolute top-0 h-full w-1 bg-white shadow-2xl z-10 cursor-ew-resize hover:w-2 transition-all duration-200"
-                    style={{
-                      left: `${dividerPosition}%`,
-                      transform: "translateX(-50%)",
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-b from-blue-400 via-white to-blue-400"></div>
-
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full border-2 border-blue-500 shadow-xl flex items-center justify-center">
-                      <div className="flex gap-1">
-                        <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
-                        <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                  {showFullTemplate ? (
+                    <div className="relative w-full h-full">
+                      <img
+                        src={selfieImage || "/placeholder.svg"}
+                        alt="Full Template"
+                        className="w-full h-full object-cover"
+                        style={{ filter: selectedTemplateConfig.filter }}
+                      />
+                      <div className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
+                        {selectedTemplateConfig.name}
+                      </div>
+                      <div className="absolute bottom-4 right-4 bg-purple-500 text-white text-xs px-3 py-1 rounded-full font-bold cursor-pointer">
+                        Click to return
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      <img
+                        src={selfieImage || "/placeholder.svg"}
+                        alt="Template"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{
+                          clipPath: `polygon(0 0, ${dividerPosition}% 0, ${dividerPosition}% 100%, 0 100%)`,
+                          filter: selectedTemplateConfig.filter,
+                        }}
+                      />
 
-                    <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-xs px-3 py-1 rounded-lg shadow-lg font-bold">
-                      {Math.round(dividerPosition)}%
-                    </div>
-                  </div>
+                      <img
+                        src={generatedImage || selfieImage}
+                        alt="Enhanced"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{
+                          clipPath: `polygon(${dividerPosition}% 0, 100% 0, 100% 100%, ${dividerPosition}% 100%)`,
+                        }}
+                      />
+
+                      <div className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
+                        {selectedTemplateConfig.name}
+                      </div>
+                      <div className="absolute top-4 right-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
+                        {generatedImage ? "AI Enhanced" : "Original"}
+                      </div>
+
+                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-purple-500/80 text-white text-xs px-3 py-1 rounded-full font-bold">
+                        Click to view full template
+                      </div>
+                    </>
+                  )}
 
                   {isGenerating && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
@@ -634,6 +791,24 @@ export default function FaceGenerator() {
                     }
                     className="w-full px-3 py-2 border border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
                   />
+                  {textPrompt &&
+                    (() => {
+                      const validation = validateAndSanitizePrompt(textPrompt);
+                      if (!validation.isValid) {
+                        return (
+                          <div className="mt-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+                            ⚠️ {validation.error}
+                          </div>
+                        );
+                      } else if (validation.sanitized !== textPrompt.trim()) {
+                        return (
+                          <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                            ℹ️ Prompt will be cleaned: "{validation.sanitized}"
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                 </div>
               </div>
             )}
@@ -659,11 +834,26 @@ export default function FaceGenerator() {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-32 border-2 border-dashed border-orange-300 rounded-xl">
+                    <div
+                      className={`flex items-center justify-center h-32 border-2 border-dashed rounded-xl transition-all duration-300 cursor-pointer ${
+                        isStyleImageDragOver
+                          ? "border-orange-500 bg-orange-100 scale-105"
+                          : "border-orange-300 hover:border-orange-400 hover:bg-orange-75"
+                      }`}
+                      onDragOver={handleStyleImageDragOver}
+                      onDragEnter={handleStyleImageDragEnter}
+                      onDragLeave={handleStyleImageDragLeave}
+                      onDrop={handleStyleImageDrop}
+                      onClick={() => styleImageInputRef.current?.click()}
+                    >
                       <div className="text-center text-orange-600">
-                        <div className="text-2xl mb-2">🎨</div>
+                        <div className="text-2xl mb-2">
+                          {isStyleImageDragOver ? "📤" : "🎨"}
+                        </div>
                         <div className="text-sm font-semibold">
-                          Upload style image
+                          {isStyleImageDragOver
+                            ? "Drop image here"
+                            : "Upload or drag & drop style image"}
                         </div>
                         <div className="text-xs">
                           Required for {selectedAPIConfig.name}
