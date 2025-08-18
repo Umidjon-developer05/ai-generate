@@ -48,6 +48,10 @@ export default function FaceGenerator() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const styleImageInputRef = useRef<HTMLInputElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  const [dividerPosition, setDividerPosition] = useState(50); // Position as percentage from left
+  const [isDragging, setIsDragging] = useState(false);
 
   const apiOptions: APIOption[] = [
     {
@@ -109,7 +113,7 @@ export default function FaceGenerator() {
       endpoint: "/external/api/v2/aivirtualtryon",
       cost: 2,
       previewImage:
-        "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?w=400&h=400&fit=crop&crop=face",
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
       requiresTextPrompt: true,
       supportedSettings: ["strength"],
       defaultSettings: { strength: 0.9, steps: 25, guidance: 7.5 },
@@ -126,7 +130,7 @@ export default function FaceGenerator() {
       endpoint: "/external/api/v1/face-swap",
       cost: 0.5,
       previewImage:
-        "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=400&h=400&fit=crop&crop=face",
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
       requiresStyleImage: true,
       supportedSettings: ["strength"],
       defaultSettings: { strength: 0.95, steps: 25, guidance: 7.5 },
@@ -343,6 +347,30 @@ export default function FaceGenerator() {
     }
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    updateDividerPosition(e);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      updateDividerPosition(e);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const updateDividerPosition = (e: React.MouseEvent) => {
+    if (previewRef.current) {
+      const rect = previewRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      setDividerPosition(percentage);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       <div className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-white/20">
@@ -396,17 +424,87 @@ export default function FaceGenerator() {
               Preview
             </h2>
 
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner">
+            <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-2xl">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-bold text-gray-800">
+                  Divider Position
+                </label>
+                <input
+                  type="number"
+                  value={Math.round(dividerPosition)}
+                  onChange={(e) =>
+                    setDividerPosition(
+                      Math.max(0, Math.min(100, Number(e.target.value)))
+                    )
+                  }
+                  className="w-16 px-2 py-1 text-sm border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  min="0"
+                  max="100"
+                />
+              </div>
+              <Slider
+                value={[dividerPosition]}
+                onValueChange={([value]) => setDividerPosition(value)}
+                max={100}
+                min={0}
+                step={1}
+              />
+            </div>
+
+            <div
+              ref={previewRef}
+              className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner cursor-crosshair"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
               {selfieImage ? (
                 <div className="relative w-full h-full">
                   <img
-                    src={generatedImage || selfieImage}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
+                    src={selfieImage || "/placeholder.svg"}
+                    alt="Original"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{
+                      clipPath: `polygon(0 0, ${dividerPosition}% 0, ${dividerPosition}% 100%, 0 100%)`,
+                    }}
                   />
 
-                  <div className="absolute top-0 h-full w-1 bg-red-500 shadow-lg z-10 left-1/2 transform -translate-x-1/2">
-                    <div className="absolute inset-0 bg-gradient-to-b from-red-400 via-red-500 to-red-400"></div>
+                  <img
+                    src={generatedImage || selfieImage}
+                    alt="Enhanced"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{
+                      clipPath: `polygon(${dividerPosition}% 0, 100% 0, 100% 100%, ${dividerPosition}% 100%)`,
+                    }}
+                  />
+
+                  <div className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
+                    Original
+                  </div>
+                  <div className="absolute top-4 right-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
+                    {generatedImage ? "AI Enhanced" : "Original"}
+                  </div>
+
+                  <div
+                    className="absolute top-0 h-full w-1 bg-white shadow-2xl z-10 cursor-ew-resize hover:w-2 transition-all duration-200"
+                    style={{
+                      left: `${dividerPosition}%`,
+                      transform: "translateX(-50%)",
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-400 via-white to-blue-400"></div>
+
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full border-2 border-blue-500 shadow-xl flex items-center justify-center">
+                      <div className="flex gap-1">
+                        <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                        <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                      </div>
+                    </div>
+
+                    <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-xs px-3 py-1 rounded-lg shadow-lg font-bold">
+                      {Math.round(dividerPosition)}%
+                    </div>
                   </div>
 
                   {isGenerating && (
