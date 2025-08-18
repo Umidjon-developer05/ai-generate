@@ -117,14 +117,12 @@ export default function FaceGenerator() {
       cost: 2,
       previewImage:
         "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
-      requiresTextPrompt: true,
+      requiresStyleImage: true,
       supportedSettings: ["strength"],
       defaultSettings: { strength: 0.9, steps: 25, guidance: 7.5 },
       settingsRanges: {
         strength: { min: 0.6, max: 1.0, step: 0.05 },
       },
-      promptPlaceholder:
-        "e.g., stylish modern outfit, fashionable clothing, casual wear",
     },
     {
       id: "faceswap",
@@ -195,24 +193,6 @@ export default function FaceGenerator() {
         guidance: { min: 6, max: 12, step: 0.5 },
       },
       promptPlaceholder: "e.g., Disney style, anime character, 3D cartoon",
-    },
-    {
-      id: "caricature",
-      name: "AI Caricature",
-      description: "Create humorous caricatures with big eyes and features",
-      endpoint: "/external/api/v1/caricature",
-      cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=400&h=400&fit=crop&crop=face",
-      requiresTextPrompt: true,
-      supportedSettings: ["strength", "steps"],
-      defaultSettings: { strength: 0.9, steps: 20, guidance: 7.5 },
-      settingsRanges: {
-        strength: { min: 0.7, max: 1.0, step: 0.05 },
-        steps: { min: 15, max: 30, step: 1 },
-      },
-      promptPlaceholder:
-        "e.g., exaggerated features, funny cartoon style, big head small body",
     },
     {
       id: "avatar",

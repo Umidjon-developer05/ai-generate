@@ -209,10 +209,15 @@ export async function POST(req: Request) {
         case "virtualtryon":
           apiEndpoint =
             "https://api.lightxeditor.com/external/api/v2/aivirtualtryon";
+          if (!styleImageUrl) {
+            return NextResponse.json(
+              { error: "Style image is required for virtual try-on" },
+              { status: 400 }
+            );
+          }
           requestBody = {
             imageUrl: imageUrl,
-            textPrompt:
-              textPrompt || "stylish modern outfit, fashionable clothing",
+            styleImageUrl: styleImageUrl,
           };
           statusEndpoint =
             "https://api.lightxeditor.com/external/api/v2/order-status";
