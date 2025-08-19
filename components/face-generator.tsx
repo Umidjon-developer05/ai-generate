@@ -1,60 +1,65 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
+import type React from "react"
+import { useState, useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Slider } from "@/components/ui/slider"
 
 interface APIOption {
-  id: string;
-  name: string;
-  description: string;
-  endpoint: string;
-  cost: number;
-  previewImage: string;
-  requiresStyleImage?: boolean;
-  requiresTextPrompt?: boolean;
-  supportedSettings: ("strength" | "steps" | "guidance")[];
-  defaultSettings: Partial<Settings>;
+  id: string
+  name: string
+  description: string
+  endpoint: string
+  cost: number
+  previewImage: string
+  requiresStyleImage?: boolean
+  requiresTextPrompt?: boolean
+  supportedSettings: ("strength" | "steps" | "guidance")[]
+  defaultSettings: Partial<Settings>
   settingsRanges: {
-    strength?: { min: number; max: number; step: number };
-    steps?: { min: number; max: number; step: number };
-    guidance?: { min: number; max: number; step: number };
-  };
-  promptPlaceholder?: string;
+    strength?: { min: number; max: number; step: number }
+    steps?: { min: number; max: number; step: number }
+    guidance?: { min: number; max: number; step: number }
+  }
+  promptPlaceholder?: string
 }
 
 interface Settings {
-  strength: number;
-  steps: number;
-  guidance: number;
+  strength: number
+  steps: number
+  guidance: number
 }
 
 export default function FaceGenerator() {
-  const [selectedAPI, setSelectedAPI] = useState("hairstyle");
+  const [selectedAPI, setSelectedAPI] = useState("hairstyle")
   const [selfieImage, setSelfieImage] = useState<string | null>(
-    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face"
-  );
-  const [styleImage, setStyleImage] = useState<string | null>(null);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face",
+  )
+  const [styleImage, setStyleImage] = useState<string | null>(null)
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
   const [settings, setSettings] = useState<Settings>({
     strength: 0.85,
     steps: 25,
     guidance: 7.5,
-  });
-  const [textPrompt, setTextPrompt] = useState("");
+  })
+  const [textPrompt, setTextPrompt] = useState("")
+  const [balance, setBalance] = useState(1250) // Balance in rubles
+  const [showAPIConfig, setShowAPIConfig] = useState(false)
+  const [apiPassword, setApiPassword] = useState("")
+  const [isAPIConfigUnlocked, setIsAPIConfigUnlocked] = useState(false)
+  const [apiKey, setApiKey] = useState("09c7163908b945799248c0820c5311bc_c5f61635e3fb430883fa2763f012203e_andoraitools")
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const styleImageInputRef = useRef<HTMLInputElement>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const styleImageInputRef = useRef<HTMLInputElement>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
 
-  const [dividerPosition, setDividerPosition] = useState(50); // Position as percentage from left
-  const [isDragging, setIsDragging] = useState(false);
-  const [isStyleImageDragOver, setIsStyleImageDragOver] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState("blackwhite");
-  const [showFullTemplate, setShowFullTemplate] = useState(false);
+  const [dividerPosition, setDividerPosition] = useState(50) // Position as percentage from left
+  const [isDragging, setIsDragging] = useState(false)
+  const [isStyleImageDragOver, setIsStyleImageDragOver] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState("blackwhite")
+  const [showFullTemplate, setShowFullTemplate] = useState(false)
 
   const apiOptions: APIOption[] = [
     {
@@ -63,8 +68,7 @@ export default function FaceGenerator() {
       description: "Try new hairstyles instantly - from bob cuts to afros",
       endpoint: "/external/api/v1/hairstyle",
       cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
+      previewImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
       requiresTextPrompt: true,
       supportedSettings: ["strength", "steps"],
       defaultSettings: { strength: 0.8, steps: 20, guidance: 7.5 },
@@ -80,8 +84,7 @@ export default function FaceGenerator() {
       description: "Transform your hair color - blonde to pink unicorn ✨",
       endpoint: "/external/api/v2/haircolor/",
       cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&h=400&fit=crop&crop=face",
+      previewImage: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&h=400&fit=crop&crop=face",
       requiresTextPrompt: true,
       supportedSettings: ["strength", "steps"],
       defaultSettings: { strength: 0.75, steps: 25, guidance: 7.5 },
@@ -106,8 +109,7 @@ export default function FaceGenerator() {
         steps: { min: 20, max: 50, step: 1 },
         guidance: { min: 5, max: 15, step: 0.5 },
       },
-      promptPlaceholder:
-        "e.g., business suit, casual streetwear, elegant dress",
+      promptPlaceholder: "e.g., business suit, casual streetwear, elegant dress",
     },
     {
       id: "virtualtryon",
@@ -115,8 +117,7 @@ export default function FaceGenerator() {
       description: "Try on virtual clothes - test jackets and shirts",
       endpoint: "/external/api/v2/aivirtualtryon",
       cost: 2,
-      previewImage:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
+      previewImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
       requiresStyleImage: true,
       supportedSettings: ["strength"],
       defaultSettings: { strength: 0.9, steps: 25, guidance: 7.5 },
@@ -129,9 +130,8 @@ export default function FaceGenerator() {
       name: "AI Face Swap",
       description: "Swap faces like in memes, but professionally",
       endpoint: "/external/api/v1/face-swap",
-      cost: 0.5,
-      previewImage:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
+      cost: 0, // Changed from 0.5 to 0
+      previewImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
       requiresStyleImage: true,
       supportedSettings: ["strength"],
       defaultSettings: { strength: 0.95, steps: 25, guidance: 7.5 },
@@ -145,8 +145,7 @@ export default function FaceGenerator() {
       description: "Create beautiful studio-style portraits",
       endpoint: "/external/api/v1/portrait",
       cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
+      previewImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
       requiresTextPrompt: true,
       supportedSettings: ["strength", "steps", "guidance"],
       defaultSettings: { strength: 0.7, steps: 35, guidance: 9.0 },
@@ -155,8 +154,7 @@ export default function FaceGenerator() {
         steps: { min: 25, max: 50, step: 1 },
         guidance: { min: 6, max: 12, step: 0.5 },
       },
-      promptPlaceholder:
-        "e.g., professional headshot, artistic portrait, studio lighting",
+      promptPlaceholder: "e.g., professional headshot, artistic portrait, studio lighting",
     },
     {
       id: "replace",
@@ -164,8 +162,7 @@ export default function FaceGenerator() {
       description: "Replace backgrounds, accessories, and elements",
       endpoint: "/external/api/v1/replace",
       cost: 1,
-      previewImage:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face",
+      previewImage: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face",
       requiresStyleImage: true,
       requiresTextPrompt: true,
       supportedSettings: ["strength", "guidance"],
@@ -174,8 +171,7 @@ export default function FaceGenerator() {
         strength: { min: 0.5, max: 1.0, step: 0.05 },
         guidance: { min: 7, max: 15, step: 0.5 },
       },
-      promptPlaceholder:
-        "e.g., tropical beach background, modern office, mountain landscape",
+      promptPlaceholder: "e.g., tropical beach background, modern office, mountain landscape",
     },
     {
       id: "cartoon",
@@ -209,94 +205,68 @@ export default function FaceGenerator() {
         steps: { min: 20, max: 40, step: 1 },
         guidance: { min: 6, max: 12, step: 0.5 },
       },
-      promptPlaceholder:
-        "e.g., gaming avatar, professional headshot, anime style",
+      promptPlaceholder: "e.g., gaming avatar, professional headshot, anime style",
     },
-  ];
+  ]
 
-  const selectedAPIConfig =
-    apiOptions.find((api) => api.id === selectedAPI) || apiOptions[0];
+  const selectedAPIConfig = apiOptions.find((api) => api.id === selectedAPI) || apiOptions[0]
 
   const templateOptions = [
     { id: "blackwhite", name: "Black & White", filter: "grayscale(100%)" },
     { id: "blur", name: "Blur Effect", filter: "blur(3px)" },
     { id: "sepia", name: "Vintage Sepia", filter: "sepia(100%) contrast(1.2)" },
-    {
-      id: "contrast",
-      name: "High Contrast",
-      filter: "contrast(150%) brightness(1.1)",
-    },
-    {
-      id: "vintage",
-      name: "Vintage Film",
-      filter: "sepia(50%) contrast(1.3) brightness(0.9) hue-rotate(15deg)",
-    },
-    {
-      id: "cold",
-      name: "Cold Tone",
-      filter: "hue-rotate(180deg) saturate(1.2)",
-    },
-  ];
+    { id: "contrast", name: "High Contrast", filter: "contrast(150%) brightness(1.1)" },
+    { id: "vintage", name: "Vintage Film", filter: "sepia(50%) contrast(1.3) brightness(0.9) hue-rotate(15deg)" },
+    { id: "cold", name: "Cold Tone", filter: "hue-rotate(180deg) saturate(1.2)" },
+  ]
 
-  const selectedTemplateConfig =
-    templateOptions.find((t) => t.id === selectedTemplate) ||
-    templateOptions[0];
+  const selectedTemplateConfig = templateOptions.find((t) => t.id === selectedTemplate) || templateOptions[0]
 
   const convertToRubles = (dollars: number) => {
-    return (dollars * 95).toFixed(0);
-  };
+    return (dollars * 95).toFixed(0)
+  }
 
-  const handleSelfieUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
+  const handleSelfieUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (file) {
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        setSelfieImage(imageUrl);
-      };
-      reader.readAsDataURL(file);
+        const imageUrl = e.target?.result as string
+        setSelfieImage(imageUrl)
+      }
+      reader.readAsDataURL(file)
     }
-    event.target.value = "";
-  };
+    event.target.value = ""
+  }
 
-  const handleStyleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
+  const handleStyleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (file) {
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        setStyleImage(imageUrl);
-      };
-      reader.readAsDataURL(file);
+        const imageUrl = e.target?.result as string
+        setStyleImage(imageUrl)
+      }
+      reader.readAsDataURL(file)
     }
-    event.target.value = "";
-  };
+    event.target.value = ""
+  }
 
   const handleAPIChange = (apiId: string) => {
-    const apiConfig = apiOptions.find((api) => api.id === apiId);
+    const apiConfig = apiOptions.find((api) => api.id === apiId)
     if (apiConfig) {
-      setSelectedAPI(apiId);
+      setSelectedAPI(apiId)
       setSettings((prev) => ({
         ...prev,
         ...apiConfig.defaultSettings,
-      }));
-      setStyleImage(null);
+      }))
+      setStyleImage(null)
     }
-  };
+  }
 
-  const validateAndSanitizePrompt = (
-    prompt: string
-  ): { isValid: boolean; sanitized: string; error?: string } => {
+  const validateAndSanitizePrompt = (prompt: string): { isValid: boolean; sanitized: string; error?: string } => {
     if (!prompt.trim()) {
-      return {
-        isValid: false,
-        sanitized: "",
-        error: "Text prompt cannot be empty",
-      };
+      return { isValid: false, sanitized: "", error: "Text prompt cannot be empty" }
     }
 
     // Remove or replace problematic characters
@@ -309,23 +279,15 @@ export default function FaceGenerator() {
       .replace(/[^\w\s\-.,!?]/g, "") // Keep only alphanumeric, spaces, and basic punctuation
       // Clean up multiple spaces
       .replace(/\s+/g, " ")
-      .trim();
+      .trim()
 
     // Check length limits
     if (sanitized.length < 3) {
-      return {
-        isValid: false,
-        sanitized,
-        error: "Text prompt must be at least 3 characters long",
-      };
+      return { isValid: false, sanitized, error: "Text prompt must be at least 3 characters long" }
     }
 
     if (sanitized.length > 200) {
-      return {
-        isValid: false,
-        sanitized,
-        error: "Text prompt must be less than 200 characters",
-      };
+      return { isValid: false, sanitized, error: "Text prompt must be less than 200 characters" }
     }
 
     // Check for empty result after sanitization
@@ -333,155 +295,195 @@ export default function FaceGenerator() {
       return {
         isValid: false,
         sanitized: "",
-        error:
-          "Text prompt contains only unsupported characters. Please use English letters and basic punctuation.",
-      };
+        error: "Text prompt contains only unsupported characters. Please use English letters and basic punctuation.",
+      }
     }
 
-    return { isValid: true, sanitized };
-  };
+    return { isValid: true, sanitized }
+  }
 
   const generateFaceWithLightX = async (file: File, styleFile?: File) => {
-    let validatedPrompt = "";
+    let validatedPrompt = ""
     if (selectedAPIConfig.requiresTextPrompt && textPrompt) {
-      const validation = validateAndSanitizePrompt(textPrompt);
+      const validation = validateAndSanitizePrompt(textPrompt)
       if (!validation.isValid) {
-        alert(`Text Prompt Error: ${validation.error}`);
-        return;
+        alert(`Text Prompt Error: ${validation.error}`)
+        return
       }
-      validatedPrompt = validation.sanitized;
-      console.log("[v0] Original prompt:", textPrompt);
-      console.log("[v0] Sanitized prompt:", validatedPrompt);
+      validatedPrompt = validation.sanitized
+      console.log("[v0] Original prompt:", textPrompt)
+      console.log("[v0] Sanitized prompt:", validatedPrompt)
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("action", "generate_face");
-    formData.append("apiType", selectedAPI);
-    formData.append("template", selectedAPIConfig.name);
-    formData.append("style", "realistic");
-    formData.append("strength", settings.strength.toString());
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("action", "generate_face")
+    formData.append("apiType", selectedAPI)
+    formData.append("template", selectedAPIConfig.name)
+    formData.append("style", "realistic")
+    formData.append("strength", settings.strength.toString())
     if (selectedAPIConfig.requiresTextPrompt && validatedPrompt) {
-      formData.append("textPrompt", validatedPrompt);
+      formData.append("textPrompt", validatedPrompt)
     }
     if (styleFile && selectedAPIConfig.requiresStyleImage) {
-      formData.append("styleImage", styleFile);
+      formData.append("styleImage", styleFile)
     }
 
-    setIsGenerating(true);
+    setIsGenerating(true)
 
     try {
       const res = await fetch("/api/lightx", {
         method: "POST",
         body: formData,
-      });
+      })
 
-      const result = await res.json();
+      const result = await res.json()
 
       if (res.ok && result.success && result.imageUrl) {
-        setGeneratedImage(result.imageUrl);
+        setGeneratedImage(result.imageUrl)
       } else {
-        alert(`Generation Error: ${result.error || "Unknown error"}`);
+        alert(`Generation Error: ${result.error || "Unknown error"}`)
       }
     } catch (error) {
-      console.error("Generation error:", error);
-      alert("Error during face generation");
+      console.error("Generation error:", error)
+      alert("Error during face generation")
     } finally {
-      setIsGenerating(false);
+      setIsGenerating(false)
     }
-  };
+  }
 
   const handleApplyGeneration = async () => {
     if (!selfieImage) {
-      alert("Please upload a selfie first");
-      return;
+      alert("Please upload a selfie first")
+      return
     }
 
     if (selectedAPIConfig.requiresStyleImage && !styleImage) {
-      alert(`Please upload a style image for ${selectedAPIConfig.name}`);
-      return;
+      alert(`Please upload a style image for ${selectedAPIConfig.name}`)
+      return
     }
 
     if (selfieImage.startsWith("data:")) {
-      const response = await fetch(selfieImage);
-      const blob = await response.blob();
-      const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
+      const response = await fetch(selfieImage)
+      const blob = await response.blob()
+      const file = new File([blob], "selfie.jpg", { type: "image/jpeg" })
 
-      let styleFile: File | undefined;
+      let styleFile: File | undefined
       if (styleImage && styleImage.startsWith("data:")) {
-        const styleResponse = await fetch(styleImage);
-        const styleBlob = await styleResponse.blob();
-        styleFile = new File([styleBlob], "style.jpg", { type: "image/jpeg" });
+        const styleResponse = await fetch(styleImage)
+        const styleBlob = await styleResponse.blob()
+        styleFile = new File([styleBlob], "style.jpg", { type: "image/jpeg" })
       }
 
-      await generateFaceWithLightX(file, styleFile);
+      await generateFaceWithLightX(file, styleFile)
     } else {
-      alert("Please upload a new selfie for generation");
+      alert("Please upload a new selfie for generation")
     }
-  };
+  }
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    updateDividerPosition(e);
-  };
+    setIsDragging(true)
+    updateDividerPosition(e)
+  }
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
-      updateDividerPosition(e);
+      updateDividerPosition(e)
     }
-  };
+  }
 
   const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+    setIsDragging(false)
+  }
 
   const updateDividerPosition = (e: React.MouseEvent) => {
     if (previewRef.current) {
-      const rect = previewRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      setDividerPosition(percentage);
+      const rect = previewRef.current.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
+      setDividerPosition(percentage)
     }
-  };
+  }
 
   const handleStyleImageDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsStyleImageDragOver(true);
-  };
+    e.preventDefault()
+    setIsStyleImageDragOver(true)
+  }
 
   const handleStyleImageDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsStyleImageDragOver(true);
-  };
+    e.preventDefault()
+    setIsStyleImageDragOver(true)
+  }
 
   const handleStyleImageDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsStyleImageDragOver(false);
-  };
+    e.preventDefault()
+    setIsStyleImageDragOver(false)
+  }
 
   const handleStyleImageDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsStyleImageDragOver(false);
+    e.preventDefault()
+    setIsStyleImageDragOver(false)
 
-    const files = e.dataTransfer.files;
+    const files = e.dataTransfer.files
     if (files && files[0]) {
-      const file = files[0];
+      const file = files[0]
       if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
+        const reader = new FileReader()
         reader.onload = (e) => {
-          const imageUrl = e.target?.result as string;
-          setStyleImage(imageUrl);
-        };
-        reader.readAsDataURL(file);
+          const imageUrl = e.target?.result as string
+          setStyleImage(imageUrl)
+        }
+        reader.readAsDataURL(file)
       }
     }
-  };
+  }
 
   const handlePreviewClick = () => {
     if (selfieImage) {
-      setShowFullTemplate(!showFullTemplate);
+      setShowFullTemplate(!showFullTemplate)
     }
-  };
+  }
+
+  const handleAPIPasswordSubmit = () => {
+    if (apiPassword === "parol2025") {
+      setIsAPIConfigUnlocked(true)
+      setApiPassword("")
+      setShowAPIConfig(false)
+    } else {
+      alert("Неверный пароль!")
+      setApiPassword("")
+    }
+  }
+
+  const handleAPIKeyUpdate = () => {
+    // Here you would typically save the API key to your backend or local storage
+    alert("API ключ обновлен!")
+    setShowAPIConfig(false)
+    setIsAPIConfigUnlocked(false)
+  }
+
+  const downloadGeneratedImage = async () => {
+    if (!generatedImage) {
+      alert("No generated image to download")
+      return
+    }
+
+    try {
+      const response = await fetch(generatedImage)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `ai-generated-${selectedAPIConfig.name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}.jpg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Download error:", error)
+      alert("Error downloading image")
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
@@ -493,13 +495,19 @@ export default function FaceGenerator() {
             </h1>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleSelfieUpload}
-                className="hidden"
-              />
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-2xl shadow-lg">
+                <div className="text-xs font-bold">Баланс</div>
+                <div className="text-lg font-black">₽{balance}</div>
+              </div>
+
+              <Button
+                onClick={() => setShowAPIConfig(true)}
+                className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
+              >
+                ⚙️ API Settings
+              </Button>
+
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleSelfieUpload} className="hidden" />
               <input
                 ref={styleImageInputRef}
                 type="file"
@@ -523,10 +531,96 @@ export default function FaceGenerator() {
                   🎨 Upload Style Image
                 </Button>
               )}
+
+              {generatedImage && (
+                <Button
+                  onClick={downloadGeneratedImage}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
+                >
+                  💾 Download Result
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {showAPIConfig && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">API Configuration</h3>
+
+            {!isAPIConfigUnlocked ? (
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Введите пароль для доступа к настройкам API:
+                </label>
+                <input
+                  type="password"
+                  value={apiPassword}
+                  onChange={(e) => setApiPassword(e.target.value)}
+                  placeholder="Введите пароль..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
+                  onKeyPress={(e) => e.key === "Enter" && handleAPIPasswordSubmit()}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleAPIPasswordSubmit}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl"
+                  >
+                    Войти
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowAPIConfig(false)
+                      setApiPassword("")
+                    }}
+                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 rounded-xl"
+                  >
+                    Отмена
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">NEXT_LIGHTX_API_KEY:</label>
+                <textarea
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4 h-20 text-xs font-mono"
+                  placeholder="Вставьте ваш API ключ здесь..."
+                />
+                <div className="text-xs text-gray-600 mb-4">
+                  <strong>Где добавить API ключ:</strong>
+                  <br />
+                  1. В файле .env.local: NEXT_LIGHTX_API_KEY=ваш_ключ
+                  <br />
+                  2. В Vercel: Project Settings → Environment Variables
+                  <br />
+                  3. В настройках хостинга как переменная окружения
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleAPIKeyUpdate}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-xl"
+                  >
+                    Сохранить
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowAPIConfig(false)
+                      setIsAPIConfigUnlocked(false)
+                    }}
+                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 rounded-xl"
+                  >
+                    Закрыть
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -537,9 +631,7 @@ export default function FaceGenerator() {
             </h2>
 
             <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-pink-100 rounded-2xl">
-              <label className="block text-sm font-bold text-gray-800 mb-3">
-                Template Effect:
-              </label>
+              <label className="block text-sm font-bold text-gray-800 mb-3">Template Effect:</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {templateOptions.map((template) => (
                   <button
@@ -559,17 +651,11 @@ export default function FaceGenerator() {
 
             <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-2xl">
               <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-bold text-gray-800">
-                  Divider Position
-                </label>
+                <label className="text-sm font-bold text-gray-800">Divider Position</label>
                 <input
                   type="number"
                   value={Math.round(dividerPosition)}
-                  onChange={(e) =>
-                    setDividerPosition(
-                      Math.max(0, Math.min(100, Number(e.target.value)))
-                    )
-                  }
+                  onChange={(e) => setDividerPosition(Math.max(0, Math.min(100, Number(e.target.value))))}
                   className="w-16 px-2 py-1 text-sm border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   min="0"
                   max="100"
@@ -662,9 +748,7 @@ export default function FaceGenerator() {
                           ></div>
                         </div>
 
-                        <div className="text-base sm:text-lg font-bold text-gray-800 mb-2">
-                          Generating Magic ✨
-                        </div>
+                        <div className="text-base sm:text-lg font-bold text-gray-800 mb-2">Generating Magic ✨</div>
                         <div className="text-xs sm:text-sm text-gray-600 mb-4">
                           Creating your {selectedAPIConfig.name.toLowerCase()}
                           ...
@@ -692,12 +776,8 @@ export default function FaceGenerator() {
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center text-gray-500 px-4">
                     <div className="text-4xl sm:text-6xl mb-4">📷</div>
-                    <div className="text-base sm:text-lg font-semibold">
-                      Upload a selfie to get started
-                    </div>
-                    <div className="text-xs sm:text-sm mt-2">
-                      Choose from 10 amazing AI transformations
-                    </div>
+                    <div className="text-base sm:text-lg font-semibold">Upload a selfie to get started</div>
+                    <div className="text-xs sm:text-sm mt-2">Choose from 10 amazing AI transformations</div>
                   </div>
                 </div>
               )}
@@ -711,83 +791,107 @@ export default function FaceGenerator() {
             </h2>
 
             <div className="mb-6 sm:mb-8">
-              <label className="block text-sm font-bold text-gray-800 mb-4">
-                Choose AI Transformation:
-              </label>
+              <label className="block text-sm font-bold text-gray-800 mb-4">Choose AI Transformation:</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 sm:max-h-80 overflow-y-auto p-2">
-                {apiOptions.map((api) => (
-                  <div
-                    key={api.id}
-                    onClick={() => handleAPIChange(api.id)}
-                    className={`cursor-pointer p-3 sm:p-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
-                      selectedAPI === api.id
-                        ? "border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-lg"
-                        : "border-gray-200 bg-white hover:border-indigo-300 hover:shadow-md"
-                    }`}
-                  >
-                    <img
-                      src={api.previewImage || "/placeholder.svg"}
-                      alt={api.name}
-                      className="w-full h-16 sm:h-20 object-cover rounded-xl mb-3"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "/placeholder.svg?height=200&width=200";
-                      }}
-                    />
-                    <h3 className="font-bold text-xs sm:text-sm text-gray-800 mb-1">
-                      {api.name}
-                    </h3>
-                    <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                      {api.description}
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-indigo-600">
-                        ₽{convertToRubles(api.cost * 0.01)}
-                      </span>
-                      {api.requiresStyleImage && (
-                        <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
-                          Style Image
+                {apiOptions.map((api) => {
+                  const isLocked = !isAPIConfigUnlocked && api.cost > 0
+
+                  if (isLocked) {
+                    return (
+                      <div
+                        key={`locked-${api.id}`}
+                        className="relative p-3 sm:p-4 rounded-2xl border-2 border-gray-300 bg-gray-100"
+                      >
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl z-10">
+                          <div className="bg-white rounded-full p-2 shadow-lg">
+                            <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path
+                                fillRule="evenodd"
+                                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                        <img
+                          src={api.previewImage || "/placeholder.svg"}
+                          alt={api.name}
+                          className="w-full h-16 sm:h-20 object-cover rounded-xl mb-3 grayscale"
+                        />
+                        <h3 className="font-bold text-xs sm:text-sm text-gray-500 mb-1">{api.name}</h3>
+                        <p className="text-xs text-gray-400 mb-2 line-clamp-2">{api.description}</p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-gray-400">₽{convertToRubles(api.cost * 0.01)}</span>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div
+                      key={api.id}
+                      onClick={() => handleAPIChange(api.id)}
+                      className={`cursor-pointer p-3 sm:p-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
+                        selectedAPI === api.id
+                          ? "border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-lg"
+                          : "border-gray-200 bg-white hover:border-indigo-300 hover:shadow-md"
+                      }`}
+                    >
+                      <img
+                        src={api.previewImage || "/placeholder.svg"}
+                        alt={api.name}
+                        className="w-full h-16 sm:h-20 object-cover rounded-xl mb-3"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.src = "/placeholder.svg?height=200&width=200"
+                        }}
+                      />
+                      <h3 className="font-bold text-xs sm:text-sm text-gray-800 mb-1">{api.name}</h3>
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">{api.description}</p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-indigo-600">
+                          {api.cost === 0 ? "FREE" : `₽${convertToRubles(api.cost * 0.01)}`}
                         </span>
-                      )}
+                        {api.requiresStyleImage && (
+                          <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
+                            Style Image
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
             {selectedAPIConfig.requiresTextPrompt && (
               <div className="mb-6 sm:mb-8">
-                <label className="block text-sm font-bold text-gray-800 mb-3">
-                  Text Prompt:
-                </label>
+                <label className="block text-sm font-bold text-gray-800 mb-3">Text Prompt:</label>
                 <div className="p-3 sm:p-4 bg-gradient-to-br from-yellow-50 to-orange-100 rounded-2xl">
                   <input
                     type="text"
                     value={textPrompt}
                     onChange={(e) => setTextPrompt(e.target.value)}
-                    placeholder={
-                      selectedAPIConfig.promptPlaceholder ||
-                      "Describe what you want..."
-                    }
+                    placeholder={selectedAPIConfig.promptPlaceholder || "Describe what you want..."}
                     className="w-full px-3 py-2 border border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
                   />
                   {textPrompt &&
                     (() => {
-                      const validation = validateAndSanitizePrompt(textPrompt);
+                      const validation = validateAndSanitizePrompt(textPrompt)
                       if (!validation.isValid) {
                         return (
                           <div className="mt-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
                             ⚠️ {validation.error}
                           </div>
-                        );
+                        )
                       } else if (validation.sanitized !== textPrompt.trim()) {
                         return (
                           <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                             ℹ️ Prompt will be cleaned: "{validation.sanitized}"
                           </div>
-                        );
+                        )
                       }
-                      return null;
+                      return null
                     })()}
                 </div>
               </div>
@@ -795,9 +899,7 @@ export default function FaceGenerator() {
 
             {selectedAPIConfig.requiresStyleImage && (
               <div className="mb-6 sm:mb-8">
-                <label className="block text-sm font-bold text-gray-800 mb-3">
-                  Style Image Preview:
-                </label>
+                <label className="block text-sm font-bold text-gray-800 mb-3">Style Image Preview:</label>
                 <div className="p-3 sm:p-4 bg-gradient-to-br from-orange-50 to-red-100 rounded-2xl">
                   {styleImage ? (
                     <div className="relative">
@@ -827,17 +929,11 @@ export default function FaceGenerator() {
                       onClick={() => styleImageInputRef.current?.click()}
                     >
                       <div className="text-center text-orange-600">
-                        <div className="text-2xl mb-2">
-                          {isStyleImageDragOver ? "📤" : "🎨"}
-                        </div>
+                        <div className="text-2xl mb-2">{isStyleImageDragOver ? "📤" : "🎨"}</div>
                         <div className="text-sm font-semibold">
-                          {isStyleImageDragOver
-                            ? "Drop image here"
-                            : "Upload or drag & drop style image"}
+                          {isStyleImageDragOver ? "Drop image here" : "Upload or drag & drop style image"}
                         </div>
-                        <div className="text-xs">
-                          Required for {selectedAPIConfig.name}
-                        </div>
+                        <div className="text-xs">Required for {selectedAPIConfig.name}</div>
                       </div>
                     </div>
                   )}
@@ -854,23 +950,17 @@ export default function FaceGenerator() {
               {selectedAPIConfig.supportedSettings.includes("strength") && (
                 <div className="p-3 sm:p-4 bg-gradient-to-br from-indigo-50 to-blue-100 rounded-2xl">
                   <div className="flex justify-between items-center mb-3">
-                    <label className="text-xs sm:text-sm font-bold text-gray-800">
-                      Strength
-                    </label>
+                    <label className="text-xs sm:text-sm font-bold text-gray-800">Strength</label>
                     <span className="text-sm sm:text-lg font-bold text-indigo-700 bg-white px-2 sm:px-3 py-1 rounded-full">
                       {settings.strength}
                     </span>
                   </div>
                   <Slider
                     value={[settings.strength]}
-                    onValueChange={([value]) =>
-                      setSettings((prev) => ({ ...prev, strength: value }))
-                    }
+                    onValueChange={([value]) => setSettings((prev) => ({ ...prev, strength: value }))}
                     max={selectedAPIConfig.settingsRanges.strength?.max || 1}
                     min={selectedAPIConfig.settingsRanges.strength?.min || 0}
-                    step={
-                      selectedAPIConfig.settingsRanges.strength?.step || 0.05
-                    }
+                    step={selectedAPIConfig.settingsRanges.strength?.step || 0.05}
                   />
                 </div>
               )}
@@ -878,18 +968,14 @@ export default function FaceGenerator() {
               {selectedAPIConfig.supportedSettings.includes("steps") && (
                 <div className="p-3 sm:p-4 bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl">
                   <div className="flex justify-between items-center mb-3">
-                    <label className="text-xs sm:text-sm font-bold text-gray-800">
-                      Steps
-                    </label>
+                    <label className="text-xs sm:text-sm font-bold text-gray-800">Steps</label>
                     <span className="text-sm sm:text-lg font-bold text-purple-700 bg-white px-2 sm:px-3 py-1 rounded-full">
                       {settings.steps}
                     </span>
                   </div>
                   <Slider
                     value={[settings.steps]}
-                    onValueChange={([value]) =>
-                      setSettings((prev) => ({ ...prev, steps: value }))
-                    }
+                    onValueChange={([value]) => setSettings((prev) => ({ ...prev, steps: value }))}
                     max={selectedAPIConfig.settingsRanges.steps?.max || 50}
                     min={selectedAPIConfig.settingsRanges.steps?.min || 1}
                     step={selectedAPIConfig.settingsRanges.steps?.step || 1}
@@ -900,23 +986,17 @@ export default function FaceGenerator() {
               {selectedAPIConfig.supportedSettings.includes("guidance") && (
                 <div className="p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl">
                   <div className="flex justify-between items-center mb-3">
-                    <label className="text-xs sm:text-sm font-bold text-gray-800">
-                      Guidance
-                    </label>
+                    <label className="text-xs sm:text-sm font-bold text-gray-800">Guidance</label>
                     <span className="text-sm sm:text-lg font-bold text-green-700 bg-white px-2 sm:px-3 py-1 rounded-full">
                       {settings.guidance}
                     </span>
                   </div>
                   <Slider
                     value={[settings.guidance]}
-                    onValueChange={([value]) =>
-                      setSettings((prev) => ({ ...prev, guidance: value }))
-                    }
+                    onValueChange={([value]) => setSettings((prev) => ({ ...prev, guidance: value }))}
                     max={selectedAPIConfig.settingsRanges.guidance?.max || 20}
                     min={selectedAPIConfig.settingsRanges.guidance?.min || 1}
-                    step={
-                      selectedAPIConfig.settingsRanges.guidance?.step || 0.5
-                    }
+                    step={selectedAPIConfig.settingsRanges.guidance?.step || 0.5}
                   />
                 </div>
               )}
@@ -930,28 +1010,22 @@ export default function FaceGenerator() {
               {isGenerating ? (
                 <div className="flex items-center justify-center gap-3">
                   <div className="animate-spin w-5 sm:w-6 h-5 sm:h-6 border-3 border-white border-t-transparent rounded-full"></div>
-                  <span className="text-sm sm:text-base">
-                    Generating Magic...
-                  </span>
+                  <span className="text-sm sm:text-base">Generating Magic...</span>
                 </div>
               ) : (
-                <span className="text-sm sm:text-base">
-                  ✨ Transform with {selectedAPIConfig.name} ✨
-                </span>
+                <span className="text-sm sm:text-base">✨ Transform with {selectedAPIConfig.name} ✨</span>
               )}
             </Button>
 
             <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl">
               <div className="flex justify-between items-center text-xs sm:text-sm">
                 <span className="font-bold text-gray-700">Selected API:</span>
-                <span className="font-bold text-indigo-600">
-                  {selectedAPIConfig.name}
-                </span>
+                <span className="font-bold text-indigo-600">{selectedAPIConfig.name}</span>
               </div>
               <div className="flex justify-between items-center text-xs sm:text-sm mt-2">
                 <span className="font-bold text-gray-700">Cost:</span>
                 <span className="font-bold text-green-600">
-                  ₽{convertToRubles(selectedAPIConfig.cost * 0.01)}
+                  {selectedAPIConfig.cost === 0 ? "FREE" : `₽${convertToRubles(selectedAPIConfig.cost * 0.01)}`}
                 </span>
               </div>
             </div>
@@ -959,5 +1033,5 @@ export default function FaceGenerator() {
         </div>
       </div>
     </div>
-  );
+  )
 }
