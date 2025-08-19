@@ -147,7 +147,7 @@ export default function FaceGenerator() {
       name: "AI Face Swap",
       description: "Swap faces like in memes, but professionally",
       endpoint: "/external/api/v1/face-swap",
-      cost: 0, // Changed from 0.5 to 0
+      cost: 1, // Changed from 0.5 to 0
       previewImage:
         "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
       requiresStyleImage: true,
@@ -526,7 +526,12 @@ export default function FaceGenerator() {
     }
 
     try {
+      console.log("[v0] Starting image download...");
       const response = await fetch(generatedImage);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -538,9 +543,10 @@ export default function FaceGenerator() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      console.log("[v0] Image downloaded successfully");
     } catch (error) {
-      console.error("Download error:", error);
-      alert("Error downloading image");
+      console.error("[v0] Download error:", error);
+      alert("Error downloading image. Please try again.");
     }
   };
 
@@ -590,106 +596,52 @@ export default function FaceGenerator() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       <div className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-white/20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <h1 className="text-xl sm:text-2xl font-black text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-center sm:text-left">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-3 lg:gap-4">
+            <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-black text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-center lg:text-left">
               AI Face Generator Studio
             </h1>
 
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-2xl shadow-lg min-w-[200px]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
-                      <svg
-                        className="w-6 h-6 text-yellow-800"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold">
-                        {balance.credits} API Credits left
-                      </div>
-                      <div className="text-xs opacity-90">
-                        {balance.validity}
-                      </div>
-                      <div className="text-xs opacity-75">{balance.plan}</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={fetchBalance}
-                    disabled={balanceLoading}
-                    className="ml-2 p-1 hover:bg-white/20 rounded-full transition-colors disabled:opacity-50"
-                    title="Refresh Balance"
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto lg:w-auto">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={() => setShowAPIConfig(true)}
+                  className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-bold px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm lg:text-base"
+                >
+                  ⚙️ API Settings
+                </Button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleSelfieUpload}
+                  className="hidden"
+                />
+                <input
+                  ref={styleImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleStyleImageUpload}
+                  className="hidden"
+                />
+
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm lg:text-base"
+                >
+                  📷 Upload Selfie
+                </Button>
+
+                {selectedAPIConfig.requiresStyleImage && (
+                  <Button
+                    onClick={() => styleImageInputRef.current?.click()}
+                    className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm lg:text-base"
                   >
-                    <svg
-                      className={`w-4 h-4 ${
-                        balanceLoading ? "animate-spin" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                  </button>
-                </div>
+                    🎨 Style Image
+                  </Button>
+                )}
               </div>
-
-              <Button
-                onClick={() => setShowAPIConfig(true)}
-                className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
-              >
-                ⚙️ API Settings
-              </Button>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleSelfieUpload}
-                className="hidden"
-              />
-              <input
-                ref={styleImageInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleStyleImageUpload}
-                className="hidden"
-              />
-
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
-              >
-                📷 Upload Selfie
-              </Button>
-
-              {selectedAPIConfig.requiresStyleImage && (
-                <Button
-                  onClick={() => styleImageInputRef.current?.click()}
-                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
-                >
-                  🎨 Upload Style Image
-                </Button>
-              )}
-
-              {generatedImage && (
-                <Button
-                  onClick={downloadGeneratedImage}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
-                >
-                  💾 Download Result
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -778,24 +730,24 @@ export default function FaceGenerator() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto p-4 sm:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          <Card className="p-4 sm:p-6 lg:p-8 bg-white/90 backdrop-blur-sm shadow-2xl border-0 rounded-3xl">
-            <h2 className="text-lg sm:text-xl font-black text-gray-800 mb-4 sm:mb-6 flex items-center gap-3">
-              <span className="w-4 h-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></span>
+      <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-6 xl:p-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+          <Card className="p-3 sm:p-4 lg:p-6 xl:p-8 bg-white/90 backdrop-blur-sm shadow-2xl border-0 rounded-3xl">
+            <h2 className="text-base sm:text-lg lg:text-xl font-black text-gray-800 mb-3 sm:mb-4 lg:mb-6 flex items-center gap-2 sm:gap-3">
+              <span className="w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></span>
               Preview
             </h2>
 
-            <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-pink-100 rounded-2xl">
-              <label className="block text-sm font-bold text-gray-800 mb-3">
+            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-gradient-to-r from-purple-50 to-pink-100 rounded-2xl">
+              <label className="block text-xs sm:text-sm font-bold text-gray-800 mb-2 sm:mb-3">
                 Template Effect:
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1 sm:gap-2">
                 {templateOptions.map((template) => (
                   <button
                     key={template.id}
                     onClick={() => setSelectedTemplate(template.id)}
-                    className={`px-3 py-2 text-xs font-bold rounded-xl transition-all duration-300 ${
+                    className={`px-2 sm:px-3 py-1 sm:py-2 text-xs font-bold rounded-xl transition-all duration-300 ${
                       selectedTemplate === template.id
                         ? "bg-purple-500 text-white shadow-lg"
                         : "bg-white text-purple-600 hover:bg-purple-100"
@@ -807,9 +759,9 @@ export default function FaceGenerator() {
               </div>
             </div>
 
-            <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-2xl">
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-bold text-gray-800">
+            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-2xl">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
+                <label className="text-xs sm:text-sm font-bold text-gray-800">
                   Divider Position
                 </label>
                 <input
@@ -820,7 +772,7 @@ export default function FaceGenerator() {
                       Math.max(0, Math.min(100, Number(e.target.value)))
                     )
                   }
-                  className="w-16 px-2 py-1 text-sm border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-14 sm:w-16 px-1 sm:px-2 py-1 text-xs sm:text-sm border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   min="0"
                   max="100"
                 />
@@ -836,108 +788,125 @@ export default function FaceGenerator() {
 
             <div
               ref={previewRef}
-              className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner cursor-crosshair"
+              className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner cursor-crosshair touch-manipulation"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
               onClick={handlePreviewClick}
+              onTouchStart={(e) => {
+                const touch = e.touches[0];
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const percentage = (x / rect.width) * 100;
+                setDividerPosition(Math.max(0, Math.min(100, percentage)));
+              }}
+              onTouchMove={(e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const percentage = (x / rect.width) * 100;
+                setDividerPosition(Math.max(0, Math.min(100, percentage)));
+              }}
             >
               {selfieImage ? (
-                <div className="relative w-full h-full">
-                  {showFullTemplate ? (
-                    <div className="relative w-full h-full">
-                      <img
-                        src={selfieImage || "/placeholder.svg"}
-                        alt="Full Template"
-                        className="w-full h-full object-cover"
-                        style={{ filter: selectedTemplateConfig.filter }}
-                      />
-                      <div className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
-                        {selectedTemplateConfig.name}
-                      </div>
-                      <div className="absolute bottom-4 right-4 bg-purple-500 text-white text-xs px-3 py-1 rounded-full font-bold cursor-pointer">
-                        Click to return
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <img
-                        src={selfieImage || "/placeholder.svg"}
-                        alt="Template"
-                        className="absolute inset-0 w-full h-full object-cover"
-                        style={{
-                          clipPath: `polygon(0 0, ${dividerPosition}% 0, ${dividerPosition}% 100%, 0 100%)`,
-                          filter: selectedTemplateConfig.filter,
-                        }}
-                      />
-
-                      <img
-                        src={generatedImage || selfieImage}
-                        alt="Enhanced"
-                        className="absolute inset-0 w-full h-full object-cover"
-                        style={{
-                          clipPath: `polygon(${dividerPosition}% 0, 100% 0, 100% 100%, ${dividerPosition}% 100%)`,
-                        }}
-                      />
-
-                      <div className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
-                        {selectedTemplateConfig.name}
-                      </div>
-                      <div className="absolute top-4 right-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
-                        {generatedImage ? "AI Enhanced" : "Original"}
-                      </div>
-
-                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-purple-500/80 text-white text-xs px-3 py-1 rounded-full font-bold">
-                        Click to view full template
-                      </div>
-                    </>
-                  )}
-
-                  {isGenerating && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
-                      <div className="bg-white rounded-3xl p-4 sm:p-6 lg:p-8 text-center shadow-2xl mx-4">
-                        <div className="relative mb-4 sm:mb-6">
-                          <div className="animate-spin w-12 sm:w-16 h-12 sm:h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto"></div>
-                          <div
-                            className="animate-spin w-8 sm:w-12 h-8 sm:h-12 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto absolute top-2 left-1/2 transform -translate-x-1/2"
-                            style={{
-                              animationDirection: "reverse",
-                              animationDuration: "1.5s",
-                            }}
-                          ></div>
-                          <div
-                            className="animate-spin w-6 sm:w-8 h-6 sm:h-8 border-4 border-pink-200 border-t-pink-600 rounded-full mx-auto absolute top-3 sm:top-4 left-1/2 transform -translate-x-1/2"
-                            style={{ animationDuration: "2s" }}
-                          ></div>
+                <>
+                  <div className="relative w-full h-full">
+                    {showFullTemplate ? (
+                      <div className="relative w-full h-full">
+                        <img
+                          src={selfieImage || "/placeholder.svg"}
+                          alt="Full Template"
+                          className="w-full h-full object-cover"
+                          style={{ filter: selectedTemplateConfig.filter }}
+                        />
+                        <div className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
+                          {selectedTemplateConfig.name}
                         </div>
-
-                        <div className="text-base sm:text-lg font-bold text-gray-800 mb-2">
-                          Generating Magic ✨
-                        </div>
-                        <div className="text-xs sm:text-sm text-gray-600 mb-4">
-                          Creating your {selectedAPIConfig.name.toLowerCase()}
-                          ...
-                        </div>
-
-                        <div className="flex justify-center gap-1">
-                          <div
-                            className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "0ms" }}
-                          ></div>
-                          <div
-                            className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "150ms" }}
-                          ></div>
-                          <div
-                            className="w-2 h-2 bg-pink-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "300ms" }}
-                          ></div>
+                        <div className="absolute bottom-4 right-4 bg-purple-500 text-white text-xs px-3 py-1 rounded-full font-bold cursor-pointer">
+                          Click to return
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    ) : (
+                      <>
+                        <img
+                          src={selfieImage || "/placeholder.svg"}
+                          alt="Template"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          style={{
+                            clipPath: `polygon(0 0, ${dividerPosition}% 0, ${dividerPosition}% 100%, 0 100%)`,
+                            filter: selectedTemplateConfig.filter,
+                          }}
+                        />
+
+                        <img
+                          src={generatedImage || selfieImage}
+                          alt="Enhanced"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          style={{
+                            clipPath: `polygon(${dividerPosition}% 0, 100% 0, 100% 100%, ${dividerPosition}% 100%)`,
+                          }}
+                        />
+
+                        <div className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
+                          {selectedTemplateConfig.name}
+                        </div>
+                        <div className="absolute top-4 right-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-bold">
+                          {generatedImage ? "AI Enhanced" : "Original"}
+                        </div>
+
+                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-purple-500/80 text-white text-xs px-3 py-1 rounded-full font-bold">
+                          Click to view full template
+                        </div>
+                      </>
+                    )}
+
+                    {isGenerating && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+                        <div className="bg-white rounded-3xl p-4 sm:p-6 lg:p-8 text-center shadow-2xl mx-4">
+                          <div className="relative mb-4 sm:mb-6">
+                            <div className="animate-spin w-12 sm:w-16 h-12 sm:h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto"></div>
+                            <div
+                              className="animate-spin w-8 sm:w-12 h-8 sm:h-12 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto absolute top-2 left-1/2 transform -translate-x-1/2"
+                              style={{
+                                animationDirection: "reverse",
+                                animationDuration: "1.5s",
+                              }}
+                            ></div>
+                            <div
+                              className="animate-spin w-6 sm:w-8 h-6 sm:h-8 border-4 border-pink-200 border-t-pink-600 rounded-full mx-auto absolute top-3 sm:top-4 left-1/2 transform -translate-x-1/2"
+                              style={{ animationDuration: "2s" }}
+                            ></div>
+                          </div>
+
+                          <div className="text-base sm:text-lg font-bold text-gray-800 mb-2">
+                            Generating Magic ✨
+                          </div>
+                          <div className="text-xs sm:text-sm text-gray-600 mb-4">
+                            Creating your {selectedAPIConfig.name.toLowerCase()}
+                            ...
+                          </div>
+
+                          <div className="flex justify-center gap-1">
+                            <div
+                              className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
+                              style={{ animationDelay: "0ms" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
+                              style={{ animationDelay: "150ms" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-pink-500 rounded-full animate-bounce"
+                              style={{ animationDelay: "300ms" }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center text-gray-500 px-4">
@@ -952,19 +921,45 @@ export default function FaceGenerator() {
                 </div>
               )}
             </div>
+            {generatedImage && (
+              <div className="mt-4 space-y-2">
+                <Button
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-base"
+                  onClick={downloadGeneratedImage}
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  Download AI Generated Image
+                </Button>
+                <p className="text-xs text-gray-500 text-center">
+                  Click to save your AI-enhanced image
+                </p>
+              </div>
+            )}
           </Card>
 
-          <Card className="p-4 sm:p-6 lg:p-8 bg-white/90 backdrop-blur-sm shadow-2xl border-0 rounded-3xl">
-            <h2 className="text-lg sm:text-xl font-black text-gray-800 mb-4 sm:mb-6 flex items-center gap-3">
-              <span className="w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></span>
+          <Card className="p-3 sm:p-4 lg:p-6 xl:p-8 bg-white/90 backdrop-blur-sm shadow-2xl border-0 rounded-3xl">
+            <h2 className="text-base sm:text-lg lg:text-xl font-black text-gray-800 mb-3 sm:mb-4 lg:mb-6 flex items-center gap-2 sm:gap-3">
+              <span className="w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></span>
               AI Transformation Studio
             </h2>
 
-            <div className="mb-6 sm:mb-8">
-              <label className="block text-sm font-bold text-gray-800 mb-4">
+            <div className="mb-4 sm:mb-6 lg:mb-8">
+              <label className="block text-xs sm:text-sm font-bold text-gray-800 mb-3 sm:mb-4">
                 Choose AI Transformation:
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 sm:max-h-80 overflow-y-auto p-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2 sm:gap-3 max-h-48 sm:max-h-60 lg:max-h-80 overflow-y-auto p-1 sm:p-2">
                 {apiOptions.map((api) => {
                   const isLocked = !isAPIConfigUnlocked && api.cost > 0;
 
@@ -972,12 +967,12 @@ export default function FaceGenerator() {
                     return (
                       <div
                         key={`locked-${api.id}`}
-                        className="relative p-3 sm:p-4 rounded-2xl border-2 border-gray-300 bg-gray-100"
+                        className="relative p-2 sm:p-3 lg:p-4 rounded-2xl border-2 border-gray-300 bg-gray-100"
                       >
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl z-10">
-                          <div className="bg-white rounded-full p-2 shadow-lg">
+                          <div className="bg-white rounded-full p-1 sm:p-2 shadow-lg">
                             <svg
-                              className="w-6 h-6 text-gray-600"
+                              className="w-4 h-4 sm:w-6 sm:h-6 text-gray-600"
                               fill="currentColor"
                               viewBox="0 0 20 20"
                             >
@@ -992,7 +987,7 @@ export default function FaceGenerator() {
                         <img
                           src={api.previewImage || "/placeholder.svg"}
                           alt={api.name}
-                          className="w-full h-16 sm:h-20 object-cover rounded-xl mb-3 grayscale"
+                          className="w-full h-12 sm:h-16 lg:h-20 object-cover rounded-xl mb-2 sm:mb-3 grayscale"
                         />
                         <h3 className="font-bold text-xs sm:text-sm text-gray-500 mb-1">
                           {api.name}
@@ -1013,7 +1008,7 @@ export default function FaceGenerator() {
                     <div
                       key={api.id}
                       onClick={() => handleAPIChange(api.id)}
-                      className={`cursor-pointer p-3 sm:p-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
+                      className={`cursor-pointer p-2 sm:p-3 lg:p-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 active:scale-95 ${
                         selectedAPI === api.id
                           ? "border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-lg"
                           : "border-gray-200 bg-white hover:border-indigo-300 hover:shadow-md"
@@ -1022,11 +1017,7 @@ export default function FaceGenerator() {
                       <img
                         src={api.previewImage || "/placeholder.svg"}
                         alt={api.name}
-                        className="w-full h-16 sm:h-20 object-cover rounded-xl mb-3"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = "/placeholder.svg?height=200&width=200";
-                        }}
+                        className="w-full h-12 sm:h-16 lg:h-20 object-cover rounded-xl mb-2 sm:mb-3"
                       />
                       <h3 className="font-bold text-xs sm:text-sm text-gray-800 mb-1">
                         {api.name}
@@ -1037,13 +1028,23 @@ export default function FaceGenerator() {
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-bold text-indigo-600">
                           {api.cost === 0
-                            ? "FREE"
+                            ? "Free"
                             : `₽${convertToRubles(api.cost * 0.01)}`}
                         </span>
-                        {api.requiresStyleImage && (
-                          <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
-                            Style Image
-                          </span>
+                        {selectedAPI === api.id && (
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-indigo-500 rounded-full flex items-center justify-center">
+                            <svg
+                              className="w-2 h-2 sm:w-3 sm:h-3 text-white"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1053,11 +1054,11 @@ export default function FaceGenerator() {
             </div>
 
             {selectedAPIConfig.requiresTextPrompt && (
-              <div className="mb-6 sm:mb-8">
-                <label className="block text-sm font-bold text-gray-800 mb-3">
+              <div className="mb-4 sm:mb-6 lg:mb-8">
+                <label className="block text-xs sm:text-sm font-bold text-gray-800 mb-3 sm:mb-4">
                   Text Prompt:
                 </label>
-                <div className="p-3 sm:p-4 bg-gradient-to-br from-yellow-50 to-orange-100 rounded-2xl">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-yellow-50 to-orange-100 rounded-2xl">
                   <input
                     type="text"
                     value={textPrompt}
@@ -1066,20 +1067,20 @@ export default function FaceGenerator() {
                       selectedAPIConfig.promptPlaceholder ||
                       "Describe what you want..."
                     }
-                    className="w-full px-3 py-2 border border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                    className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-xs sm:text-sm"
                   />
                   {textPrompt &&
                     (() => {
                       const validation = validateAndSanitizePrompt(textPrompt);
                       if (!validation.isValid) {
                         return (
-                          <div className="mt-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+                          <div className="mt-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-lg border border-red-200">
                             ⚠️ {validation.error}
                           </div>
                         );
                       } else if (validation.sanitized !== textPrompt.trim()) {
                         return (
-                          <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                          <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200">
                             ℹ️ Prompt will be cleaned: "{validation.sanitized}"
                           </div>
                         );
@@ -1091,28 +1092,28 @@ export default function FaceGenerator() {
             )}
 
             {selectedAPIConfig.requiresStyleImage && (
-              <div className="mb-6 sm:mb-8">
-                <label className="block text-sm font-bold text-gray-800 mb-3">
+              <div className="mb-4 sm:mb-6 lg:mb-8">
+                <label className="block text-xs sm:text-sm font-bold text-gray-800 mb-3 sm:mb-4">
                   Style Image Preview:
                 </label>
-                <div className="p-3 sm:p-4 bg-gradient-to-br from-orange-50 to-red-100 rounded-2xl">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-50 to-red-100 rounded-2xl">
                   {styleImage ? (
                     <div className="relative">
                       <img
                         src={styleImage || "/placeholder.svg"}
                         alt="Style preview"
-                        className="w-full h-32 object-cover rounded-xl"
+                        className="w-full h-24 sm:h-32 object-cover rounded-xl"
                       />
                       <button
                         onClick={() => setStyleImage(null)}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs hover:bg-red-600"
                       >
                         ×
                       </button>
                     </div>
                   ) : (
                     <div
-                      className={`flex items-center justify-center h-32 border-2 border-dashed rounded-xl transition-all duration-300 cursor-pointer ${
+                      className={`flex items-center justify-center h-24 sm:h-32 border-2 border-dashed rounded-xl transition-all duration-300 cursor-pointer ${
                         isStyleImageDragOver
                           ? "border-orange-500 bg-orange-100 scale-105"
                           : "border-orange-300 hover:border-orange-400 hover:bg-orange-75"
@@ -1124,10 +1125,10 @@ export default function FaceGenerator() {
                       onClick={() => styleImageInputRef.current?.click()}
                     >
                       <div className="text-center text-orange-600">
-                        <div className="text-2xl mb-2">
+                        <div className="text-xl sm:text-2xl mb-1 sm:mb-2">
                           {isStyleImageDragOver ? "📤" : "🎨"}
                         </div>
-                        <div className="text-sm font-semibold">
+                        <div className="text-xs sm:text-sm font-semibold">
                           {isStyleImageDragOver
                             ? "Drop image here"
                             : "Upload or drag & drop style image"}
@@ -1142,19 +1143,19 @@ export default function FaceGenerator() {
               </div>
             )}
 
-            <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                <span className="w-3 h-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></span>
+            <div className="space-y-3 sm:space-y-4 lg:space-y-6 mb-4 sm:mb-6 lg:mb-8">
+              <h3 className="font-bold text-gray-800 flex items-center gap-1 sm:gap-2">
+                <span className="w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></span>
                 Settings
               </h3>
 
               {selectedAPIConfig.supportedSettings.includes("strength") && (
-                <div className="p-3 sm:p-4 bg-gradient-to-br from-indigo-50 to-blue-100 rounded-2xl">
-                  <div className="flex justify-between items-center mb-3">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-indigo-50 to-blue-100 rounded-2xl">
+                  <div className="flex justify-between items-center mb-2">
                     <label className="text-xs sm:text-sm font-bold text-gray-800">
                       Strength
                     </label>
-                    <span className="text-sm sm:text-lg font-bold text-indigo-700 bg-white px-2 sm:px-3 py-1 rounded-full">
+                    <span className="text-sm font-bold text-indigo-700 bg-white px-2 py-1 rounded-full">
                       {settings.strength}
                     </span>
                   </div>
@@ -1173,12 +1174,12 @@ export default function FaceGenerator() {
               )}
 
               {selectedAPIConfig.supportedSettings.includes("steps") && (
-                <div className="p-3 sm:p-4 bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl">
-                  <div className="flex justify-between items-center mb-3">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl">
+                  <div className="flex justify-between items-center mb-2">
                     <label className="text-xs sm:text-sm font-bold text-gray-800">
                       Steps
                     </label>
-                    <span className="text-sm sm:text-lg font-bold text-purple-700 bg-white px-2 sm:px-3 py-1 rounded-full">
+                    <span className="text-sm font-bold text-purple-700 bg-white px-2 py-1 rounded-full">
                       {settings.steps}
                     </span>
                   </div>
@@ -1195,12 +1196,12 @@ export default function FaceGenerator() {
               )}
 
               {selectedAPIConfig.supportedSettings.includes("guidance") && (
-                <div className="p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl">
-                  <div className="flex justify-between items-center mb-3">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl">
+                  <div className="flex justify-between items-center mb-2">
                     <label className="text-xs sm:text-sm font-bold text-gray-800">
                       Guidance
                     </label>
-                    <span className="text-sm sm:text-lg font-bold text-green-700 bg-white px-2 sm:px-3 py-1 rounded-full">
+                    <span className="text-sm font-bold text-green-700 bg-white px-2 py-1 rounded-full">
                       {settings.guidance}
                     </span>
                   </div>
@@ -1220,32 +1221,32 @@ export default function FaceGenerator() {
             </div>
 
             <Button
-              className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-black py-4 sm:py-6 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105 text-base sm:text-xl"
+              className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-black py-3 sm:py-4 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105 text-sm sm:text-base"
               onClick={handleApplyGeneration}
               disabled={isGenerating || !selfieImage}
             >
               {isGenerating ? (
-                <div className="flex items-center justify-center gap-3">
-                  <div className="animate-spin w-5 sm:w-6 h-5 sm:h-6 border-3 border-white border-t-transparent rounded-full mx-auto"></div>
-                  <span className="text-sm sm:text-base">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin w-4 h-4 border-3 border-white border-t-transparent rounded-full mx-auto"></div>
+                  <span className="text-xs sm:text-sm">
                     Generating Magic...
                   </span>
                 </div>
               ) : (
-                <span className="text-sm sm:text-base">
+                <span className="text-xs sm:text-sm">
                   ✨ Transform with {selectedAPIConfig.name} ✨
                 </span>
               )}
             </Button>
 
-            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl">
-              <div className="flex justify-between items-center text-xs sm:text-sm">
+            <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl">
+              <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-gray-700">Selected API:</span>
                 <span className="font-bold text-indigo-600">
                   {selectedAPIConfig.name}
                 </span>
               </div>
-              <div className="flex justify-between items-center text-xs sm:text-sm mt-2">
+              <div className="flex justify-between items-center text-xs mt-1">
                 <span className="font-bold text-gray-700">Cost:</span>
                 <span className="font-bold text-green-600">
                   {selectedAPIConfig.cost === 0
