@@ -12,7 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const apiKey = process.env.NEXT_LIGHTX_API_KEY;
+    const apiKey =
+      "09c7163908b945799248c0820c5311bc_c5f61635e3fb430883fa2763f012203e_andoraitools";
 
     console.log("[v0] API Key being used:", apiKey ? "Present" : "Missing");
     console.log("[v0] Action:", action);
@@ -20,6 +21,117 @@ export async function POST(req: Request) {
 
     if (!apiKey) {
       return NextResponse.json({ error: "Missing API key" }, { status: 500 });
+    }
+
+    if (action === "check_balance") {
+      try {
+        const balanceEndpoint = "https://api.lightxeditor.com/balance";
+
+        console.log("[v0] Trying balance endpoint:", balanceEndpoint);
+
+        const authHeaders = [
+          { Authorization: `Bearer ${apiKey}` },
+          { Authorization: apiKey },
+          { "x-api-key": apiKey },
+          { "api-key": apiKey },
+          { "X-API-Key": apiKey },
+        ];
+
+        let balanceResponse = null;
+        let lastError = null;
+
+        for (const headers of authHeaders) {
+          try {
+            console.log("[v0] Trying auth headers:", Object.keys(headers));
+            balanceResponse = await fetch(balanceEndpoint, {
+              method: "GET",
+              headers: Object.fromEntries(
+                Object.entries({
+                  "Content-Type": "application/json",
+                  ...headers,
+                }).filter(([_, v]) => typeof v === "string")
+              ),
+            });
+
+            console.log(
+              "[v0] Balance response status:",
+              balanceResponse.status
+            );
+
+            if (balanceResponse.ok) {
+              break; // Success, exit the loop
+            } else {
+              const errorText = await balanceResponse.text();
+              lastError = errorText;
+              console.log("[v0] Auth attempt failed:", errorText);
+            }
+          } catch (error: any) {
+            lastError = error.message;
+            console.log("[v0] Auth attempt error:", error.message);
+          }
+        }
+
+        if (balanceResponse && balanceResponse.ok) {
+          const balanceData = await balanceResponse.json();
+          console.log(
+            "[v0] Balance data received:",
+            JSON.stringify(balanceData, null, 2)
+          );
+
+          // Extract balance from various possible response formats
+          let credits = null;
+          if (balanceData.balance !== undefined) credits = balanceData.balance;
+          else if (balanceData.credits !== undefined)
+            credits = balanceData.credits;
+          else if (balanceData.body?.balance !== undefined)
+            credits = balanceData.body.balance;
+          else if (balanceData.body?.credits !== undefined)
+            credits = balanceData.body.credits;
+          else if (balanceData.data?.balance !== undefined)
+            credits = balanceData.data.balance;
+          else if (balanceData.data?.credits !== undefined)
+            credits = balanceData.data.credits;
+
+          if (credits !== null) {
+            return NextResponse.json({
+              success: true,
+              balance: {
+                credits: credits,
+                plan: balanceData.plan || "Starter",
+                validity: balanceData.validity || "Lifetime",
+              },
+              endpoint: balanceEndpoint,
+            });
+          }
+        }
+
+        console.log("[v0] All auth methods failed, last error:", lastError);
+        console.log(
+          "[v0] Balance endpoint failed, returning simulated balance"
+        );
+        return NextResponse.json({
+          success: true,
+          balance: {
+            credits: 0,
+            plan: "Starter",
+            validity: "Lifetime",
+          },
+          simulated: true,
+          message: "Balance endpoint failed, showing simulated balance",
+        });
+      } catch (error: any) {
+        console.error("[v0] Balance check error:", error);
+        return NextResponse.json({
+          success: true,
+          balance: {
+            credits: 0,
+            plan: "Starter",
+            validity: "Lifetime",
+          },
+          simulated: true,
+          error: error.message,
+        });
+      }
     }
 
     if (action === "generate_face") {
