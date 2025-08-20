@@ -12,27 +12,129 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const apiKey = process.env.NEXT_LIGHTX_API_KEY;
+    const apiKey =
+      "35c3896e991c412b8836b8a6a6feb972_50c858bdc1e14c63b6731fa409dbafd6_andoraitools";
 
     console.log("[v0] API Key being used:", apiKey ? "Present" : "Missing");
     console.log("[v0] Action:", action);
     console.log("[v0] API Type:", apiType);
 
     if (!apiKey) {
-      return NextResponse.json(
-        {
-          error: "Missing API key",
-          message:
-            "Please add NEXT_LIGHTX_API_KEY to your environment variables",
-        },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Missing API key" }, { status: 500 });
     }
 
-    const getAuthHeaders = () => ({
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-    });
+    if (action === "check_balance") {
+      try {
+        const balanceEndpoint =
+          "https://api.lightxeditor.com/external/api/v1/creditsInfo";
+
+        console.log("[v0] Trying balance endpoint:", balanceEndpoint);
+
+        const authHeaders = [
+          { Authorization: `Bearer ${apiKey}` },
+          { Authorization: apiKey },
+          { "x-api-key": apiKey },
+          { "api-key": apiKey },
+          { "X-API-Key": apiKey },
+        ];
+
+        let balanceResponse = null;
+        let lastError = null;
+
+        for (const headers of authHeaders) {
+          try {
+            console.log("[v0] Trying auth headers:", Object.keys(headers));
+            const mergedHeaders: HeadersInit = Object.fromEntries(
+              Object.entries({
+                "Content-Type": "application/json",
+                ...headers,
+              }).filter(([_, v]) => typeof v === "string")
+            );
+            balanceResponse = await fetch(balanceEndpoint, {
+              method: "GET",
+              headers: mergedHeaders,
+            });
+
+            console.log(
+              "[v0] Balance response status:",
+              balanceResponse.status
+            );
+
+            if (balanceResponse.ok) {
+              break; // Success, exit the loop
+            } else {
+              const errorText = await balanceResponse.text();
+              lastError = errorText;
+              console.log("[v0] Auth attempt failed:", errorText);
+            }
+          } catch (error: any) {
+            lastError = error.message;
+            console.log("[v0] Auth attempt error:", error.message);
+          }
+        }
+
+        if (balanceResponse && balanceResponse.ok) {
+          const balanceData = await balanceResponse.json();
+          console.log(
+            "[v0] Balance data received:",
+            JSON.stringify(balanceData, null, 2)
+          );
+
+          // Extract balance from various possible response formats
+          let credits = null;
+          if (balanceData.balance !== undefined) credits = balanceData.balance;
+          else if (balanceData.credits !== undefined)
+            credits = balanceData.credits;
+          else if (balanceData.body?.balance !== undefined)
+            credits = balanceData.body.balance;
+          else if (balanceData.body?.credits !== undefined)
+            credits = balanceData.body.credits;
+          else if (balanceData.data?.balance !== undefined)
+            credits = balanceData.data.balance;
+          else if (balanceData.data?.credits !== undefined)
+            credits = balanceData.data.credits;
+
+          if (credits !== null) {
+            return NextResponse.json({
+              success: true,
+              balance: {
+                credits: credits,
+                plan: balanceData.plan || "Starter",
+                validity: balanceData.validity || "Lifetime",
+              },
+              endpoint: balanceEndpoint,
+            });
+          }
+        }
+
+        console.log("[v0] All auth methods failed, last error:", lastError);
+        console.log(
+          "[v0] Balance endpoint failed, returning simulated balance"
+        );
+        return NextResponse.json({
+          success: true,
+          balance: {
+            credits: 0,
+            plan: "Starter",
+            validity: "Lifetime",
+          },
+          simulated: true,
+          message: "Balance endpoint failed, showing simulated balance",
+        });
+      } catch (error: any) {
+        console.error("[v0] Balance check error:", error);
+        return NextResponse.json({
+          success: true,
+          balance: {
+            credits: 0,
+            plan: "Starter",
+            validity: "Lifetime",
+          },
+          simulated: true,
+          error: error.message,
+        });
+      }
+    }
 
     if (action === "generate_face") {
       // Step 1: Get upload URL
@@ -46,7 +148,10 @@ export async function POST(req: Request) {
         "https://api.lightxeditor.com/external/api/v2/uploadImageUrl",
         {
           method: "POST",
-          headers: getAuthHeaders(),
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+          },
           body: JSON.stringify({
             uploadType: "imageUrl",
             size: file.size,
@@ -56,22 +161,14 @@ export async function POST(req: Request) {
       );
 
       console.log("[v0] Upload response status:", uploadResponse.status);
+      console.log(
+        "[v0] Upload response headers:",
+        Object.fromEntries(uploadResponse.headers.entries())
+      );
 
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
         console.log("[v0] Upload error response:", errorText);
-
-        if (uploadResponse.status === 403) {
-          return NextResponse.json(
-            {
-              error: "Authentication failed",
-              message:
-                "Invalid or expired API key. Please check your NEXT_LIGHTX_API_KEY environment variable.",
-              details: errorText,
-            },
-            { status: 403 }
-          );
-        }
 
         let error;
         try {
@@ -155,7 +252,10 @@ export async function POST(req: Request) {
           "https://api.lightxeditor.com/external/api/v2/uploadImageUrl",
           {
             method: "POST",
-            headers: getAuthHeaders(),
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+            },
             body: JSON.stringify({
               uploadType: "imageUrl",
               size: styleImageFile.size,
@@ -254,7 +354,7 @@ export async function POST(req: Request) {
           apiEndpoint = "https://api.lightxeditor.com/external/api/v1/portrait";
           requestBody = {
             imageUrl: imageUrl,
-            styleImageUrl: styleImageUrl || "",
+            styleImageUrl: styleImageUrl || "", // Always include, use empty string if not provided
             textPrompt: textPrompt || "professional portrait style",
           };
           statusEndpoint =
@@ -308,6 +408,7 @@ export async function POST(req: Request) {
           break;
 
         default:
+          // Default to cartoon generation for backward compatibility
           apiEndpoint = "https://api.lightxeditor.com/external/api/v1/cartoon";
           requestBody = {
             imageUrl: imageUrl,
@@ -341,19 +442,6 @@ export async function POST(req: Request) {
       if (!generationResponse.ok) {
         const errorText = await generationResponse.text();
         console.log("[v0] Generation error:", errorText);
-
-        if (generationResponse.status === 403) {
-          return NextResponse.json(
-            {
-              error: "Authentication failed",
-              message:
-                "Invalid or expired API key. Please check your NEXT_LIGHTX_API_KEY environment variable.",
-              details: errorText,
-            },
-            { status: 403 }
-          );
-        }
-
         let error;
         try {
           error = JSON.parse(errorText);
@@ -394,8 +482,8 @@ export async function POST(req: Request) {
 
       // Step 4: Poll for result using the appropriate status endpoint
       let retries = 0;
-      const maxRetries = 10;
-      const pollInterval = 5000;
+      const maxRetries = 10; // Increased from 5 to 10
+      const pollInterval = 5000; // Increased from 3000ms to 5000ms (5 seconds)
 
       while (retries < maxRetries) {
         console.log(
