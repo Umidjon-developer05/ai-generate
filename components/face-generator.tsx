@@ -593,7 +593,67 @@ export default function FaceGenerator() {
   useEffect(() => {
     fetchBalance();
   }, []);
+  const downloadFilteredImage = async () => {
+    if (!selfieImage) {
+      alert("No image to download");
+      return;
+    }
 
+    try {
+      console.log("[v0] Starting filtered image download...");
+
+      // Create a canvas to apply filters and download
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Apply the selected filter
+        if (ctx) {
+          ctx.filter = selectedTemplateConfig.filter;
+          ctx.drawImage(img, 0, 0);
+
+          // Convert canvas to blob and download
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `filtered-${selectedTemplateConfig.name
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}-${Date.now()}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                console.log("[v0] Filtered image downloaded successfully");
+              }
+            },
+            "image/jpeg",
+            0.9
+          );
+        } else {
+          console.error("[v0] Canvas context is null");
+          alert("Error processing image. Please try again.");
+        }
+      };
+
+      img.onerror = () => {
+        console.error("[v0] Error loading image for download");
+        alert("Error loading image. Please try again.");
+      };
+
+      img.src = selfieImage;
+    } catch (error) {
+      console.error("[v0] Download error:", error);
+      alert("Error downloading filtered image. Please try again.");
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       <div className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-white/20">
@@ -969,11 +1029,11 @@ export default function FaceGenerator() {
                 </div>
               )}
             </div>
-            {generatedImage && (
+            {selfieImage && (
               <div className="mt-4 space-y-2">
                 <Button
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-base"
-                  onClick={downloadGeneratedImage}
+                  className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-base"
+                  onClick={downloadFilteredImage}
                 >
                   <svg
                     className="w-5 h-5 mr-2"
@@ -988,8 +1048,33 @@ export default function FaceGenerator() {
                       d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  Download AI Generated Image
+                  Download with {selectedTemplateConfig.name} Effect
                 </Button>
+                <p className="text-xs text-gray-500 text-center">
+                  Download your image with the applied filter effect
+                </p>
+
+                {generatedImage && (
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-base"
+                    onClick={downloadGeneratedImage}
+                  >
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    Download AI Generated Image
+                  </Button>
+                )}
                 <p className="text-xs text-gray-500 text-center">
                   Click to save your AI-enhanced image
                 </p>
